@@ -1,0 +1,12 @@
+* {
+    margin: 0;
+    padding: 0;
+}
+
+div.player {
+  background-color: lightgrey;
+  width: 100px;
+  padding: 15px;
+  border: 15px solid navy;
+  margin: 15px;
+}

@@ -1,0 +1,16 @@
+{
+	"name": "spoons",
+	"version": "0.0.1",
+	"private": true,
+	"dependencies": {
+		"body-parser": "latest",
+		"express": "latest",
+		"express-session": "latest",
+		"redis": "latest",
+		"socket.io": "latest"
+	},
+	"repository": {
+		"type": "git",
+		"url": ""
+	}
+}
