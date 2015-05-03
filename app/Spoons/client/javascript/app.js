@@ -4,6 +4,7 @@ var main = function () {
     "use strict";
 
     var username;
+    var playerIndex = 0;
     var socket = io();
     // Assign action to submit button
     $("input.userSubmit").on("click", function(event){
@@ -47,10 +48,19 @@ var main = function () {
                 $("td.user").append($name);
             });
         } else if (scene === 2) {
-            users.forEach(function (e, i, a){
-                $("div.u1").append(e);
-            });
+            var playerPlacement = 0;
+            for (var i = (playerIndex + 1) % 8; i != playerIndex; i = (i + 1) % 8){
+                if (!users[i]) continue;
+                var dom  = "div.u" + (playerPlacement);
+                $(dom).text(users[i]);
+                console.log(dom, users[i]);
+                playerPlacement++;
+            }
         }
+    });
+
+    socket.on("playerIndex", function (index){
+        playerIndex = index;
     });
 
     socket.on("gameStart", function(){
