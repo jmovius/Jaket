@@ -10,6 +10,33 @@ var express = require("express"),
 // Maximum number of players per room. Games can start with fewer players if 30 second timer goes up.
 var MAX_PLAYERS = 2;
 
+// Initialize deck of cards.
+var deckSchema = {
+	suits: ["s", "c", "d", "h"],
+	values: ["2", "3", "4", "5", "6", "7", "8", "9", "10", "j", "q", "k", "a"]
+}
+var initDeck = function (deck) {
+	var i, k,
+		retDeck = [],
+		lenSuits = deck.suits.length,
+		lenVals = deck.values.length;
+
+	for(i = 0; i < lenSuits; i++) {
+		for(k = 0; k < lenVals; k++) {
+			retDeck.push({ suit:deck.suits[i], value:deck.values[k] });
+		}
+	}
+	return(retDeck);
+}
+// Array shuffle function. Used to shuffle deck of cards.
+// Source: http://jsfromhell.com/array/shuffle
+var shuffle = function (o) {
+    for(var j, x, i = o.length; i; j = Math.floor(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);
+    return o;
+};
+var baseDeck = initDeck(deckSchema); // Deck Initialized
+//shuffledDeck = shuffle(baseDeck); // A new shuffled deck is created.
+
 // Loads index.html inside /client folder
 app.use(express.static(__dirname + "/client"));
 app.use(bodyParser.json());
@@ -144,12 +171,5 @@ setInterval(function(){
 		}
 	});
 }, 1000);
-
-// Array shuffle function. Used to shuffle deck of cards.
-// Source: http://jsfromhell.com/array/shuffle
-function shuffle(o){
-    for(var j, x, i = o.length; i; j = Math.floor(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);
-    return o;
-};
 
 console.log("Server listening on port 3000...");
