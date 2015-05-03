@@ -5,7 +5,7 @@ var main = function () {
 
     var username;
     var playerIndex = 0;
-    var socket = io();
+    var socket = io.connect();
     // Assign action to submit button
     $("input.userSubmit").on("click", function(event){
         event.preventDefault();

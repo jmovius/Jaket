@@ -1,17 +1,38 @@
 // Setting everything up
-var http = require('http');  
-var express = require('express');
-var cookieParser = require('cookie-parser');  
-var socketIO = require('socket.io');  
-var expressSession = require('express-session');  
-var SessionSockets = require('session.socket.io');  
-var sessionStore = new expressSession.MemoryStore();  
-var app = express();
-var server =  http.Server(app);
-var io = socketIO(server);  
+var http = require("http");
+var express = require("express");
 var bodyParser = require("body-parser");
+var cookieParser = require("cookie-parser");
+var expressSession = require("express-session");
+var app = express();
+
+var myCookieParser = cookieParser("f4tk4t4u");
+var sessionStore = new expressSession.MemoryStore();
+
 var redis = require("redis");
 var client = redis.createClient();
+
+// Loads index.html inside /client folder
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(myCookieParser);
+app.use(expressSession({
+	secret: "f4tk4t4u",
+	store: sessionStore,
+	resave: true,
+	saveUninitialized: true
+}));
+
+var server = http.Server(app);
+var socketIO = require("socket.io");
+var io = socketIO(server);
+
+var SessionSockets = require("session.socket.io");
+var sessionSockets = new SessionSockets(io, sessionStore, myCookieParser);
+
+app.use(express.static(__dirname + "/client"));
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Maximum number of players per room. Games can start with fewer players if 30 second timer goes up.
 var MAX_PLAYERS = 2;
@@ -20,7 +41,7 @@ var MAX_PLAYERS = 2;
 var deckSchema = {
 	suits: ["s", "c", "d", "h"],
 	values: ["2", "3", "4", "5", "6", "7", "8", "9", "10", "j", "q", "k", "a"]
-}
+};
 var initDeck = function (deck) {
 	var i, k,
 		retDeck = [],
@@ -33,7 +54,7 @@ var initDeck = function (deck) {
 		}
 	}
 	return(retDeck);
-}
+};
 // Array shuffle function. Used to shuffle deck of cards.
 // Source: http://jsfromhell.com/array/shuffle
 var shuffle = function (o) {
@@ -42,18 +63,6 @@ var shuffle = function (o) {
 };
 var baseDeck = initDeck(deckSchema); // Deck Initialized
 //shuffledDeck = shuffle(baseDeck); // A new shuffled deck is created.
-
-// Loads index.html inside /client folder
-app.use(express.static(__dirname + "/client"));
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
-
-var myCookieParser = cookieParser('test');
-
-app.use(myCookieParser);
-app.use(expressSession( {secret: 'test', store: sessionStore} ));
-
-var sessionSockets = new SessionSockets(io, sessionStore, myCookieParser);
 
 // Socket.IO things============================================================
 var openRoomID = 0;
@@ -67,8 +76,8 @@ sessionSockets.on("connection", function (err, socket, session){
 	// Then save the data for the session: session.save()
 	session.foo = "bar";
 	session.save();
+	console.log("session.foo: " + session.foo + ";");
 
-	"use strict";
 	console.log("some client connected");
 
 	// Client disconnects
@@ -125,10 +134,6 @@ sessionSockets.on("connection", function (err, socket, session){
 });
 //=============================================================================
 
-// Start the server
-server.listen(3000);
-
-
 // server establishes connection with Redis server
 client.on("connect", function(){
 	"use strict";
@@ -167,4 +172,6 @@ setInterval(function(){
 	}
 }, 1000);
 
+// Start the server
+server.listen(3000);
 console.log("Server listening on port 3000...");
