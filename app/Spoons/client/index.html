@@ -1,61 +1,55 @@
-
+<!doctype html>
 <html>
-  <head>
-    <meta charset='utf-8'>
-    <title>Spoons!</title>
-    <link href="stylesheets/reset.css" rel="stylesheet" type="text/css">
-    <link href="stylesheets/style.css" rel="stylesheet" type="text/css">
-    <link rel='stylesheet' href='http://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css' type='text/css'>
-  </head>
+    <head>
+        <meta charset="utf-8">
+        <title>Spoons!</title>
+        <link href="stylesheets/reset.css" rel="stylesheet" type="text/css">
+        <link href="stylesheets/style.css" rel="stylesheet" type="text/css">
+        <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css" type="text/css">
+    </head>
 
-  <body>
-    <!-- INITIAL VIEW (create username page)-->
-    <div class='initialView'> 
+    <body>
+        <!-- Timer element for displaying countdowns. Visible on multiple scenes.-->
+        <div class='timer'></div>
 
-      <div class='container'>
-        <h1>Insert Username</h1>
-      </div>
+        <!-- INITIAL VIEW (create username page)-->
+        <div class="initialView"> 
+            <div class="container">
+                <h1>Insert Username</h1>
+            </div>
 
-      <div class='panel panel-default'>
-        <div class='panel-body'>
-
-          <center>
-            <form>
-              <input type="text" class='username'><input type="submit" class='userSubmit' value="Connect!">
-            </form>
-            <div class="result"></div>
-          </center>
-
+            <div class="panel panel-default">
+                <div class="panel-body">
+                    <form>
+                        <input type="text" class="username"><input type="submit" class="userSubmit" value="Connect!">
+                    </form>
+                    <div class="result"></div>
+                </div>
+            </div>
         </div>
-      </div>
 
-    </div>
-    <!-- -->
+        <!-- WAITING ROOM where players wait for other users to join the room -->
+        <div class="waitingRoom">
+            <h1>WAITING FOR PLAYERS...</h1>
+            <table border="1" style="width:100%">
+                <td class="index"></td>
+                <td class="user"></td>
+            </table>
+        </div>
 
-    <div class="waitingRoom">
-      <h1>WAITING FOR PLAYERS...</h1>
-      <table border="1" style="width:100%">
-        <td class="index">
-        </td>
-        <td class="user">
-        </td>
-      </table>
-    </div>
+        <!-- GAME SCENE where the actual game takes place -->
+        <div class="gameScene">
+            <div class="player u0"></div>
+            <div class="player u1"></div>
+            <div class="player u2"></div>
+            <div class="player u3"></div>
+            <div class="player u4"></div>
+            <div class="player u5"></div>
+            <div class="player u6"></div>
+        </div>
 
-    <div class="gameScene">
-      <div class="player u0"></div>
-      <div class="player u1"></div>
-      <div class="player u2"></div>
-      <div class="player u3"></div>
-      <div class="player u4"></div>
-      <div class="player u5"></div>
-      <div class="player u6"></div>
-    </div>
-
-    <script src="http://code.jquery.com/jquery-1.11.2.min.js"></script>
-    <script src="https://cdn.socket.io/socket.io-1.3.5.js"></script>
-    <script src="javascript/app.js"></script>
-
-  </body>
-
+        <script src="http://code.jquery.com/jquery-1.11.2.min.js"></script>
+        <script src="https://cdn.socket.io/socket.io-1.3.5.js"></script>
+        <script src="javascript/app.js"></script>
+    </body>
 </html>
