@@ -1,11 +1,17 @@
 // Setting everything up
-var express = require("express"),
-	app = express(),
-    http = require("http").Server(app),
-	sio = require("socket.io")(http),
-    redis = require("redis"),
-    bodyParser = require("body-parser"),
-    client = redis.createClient();
+var http = require('http');  
+var express = require('express');
+var cookieParser = require('cookie-parser');  
+var socketIO = require('socket.io');  
+var expressSession = require('express-session');  
+var SessionSockets = require('session.socket.io');  
+var sessionStore = new expressSession.MemoryStore();  
+var app = express();
+var server =  http.Server(app);
+var io = socketIO(server);  
+var bodyParser = require("body-parser");
+var redis = require("redis");
+var client = redis.createClient();
 
 // Maximum number of players per room. Games can start with fewer players if 30 second timer goes up.
 var MAX_PLAYERS = 2;
@@ -42,78 +48,85 @@ app.use(express.static(__dirname + "/client"));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
+var myCookieParser = cookieParser('test');
+
+app.use(myCookieParser);
+app.use(expressSession( {secret: 'test', store: sessionStore} ));
+
+var sessionSockets = new SessionSockets(io, sessionStore, myCookieParser);
+
 // Socket.IO things============================================================
 var openRoomID = 0;
 var waitTime = 30;
-var inGameRooms = [];
+var rooms = {"0": {"users": [], "spoons": 0}};
 var userToSocket = {};
 
 // Server receives connection from a client
-sio.on("connection", function (socket){
+sessionSockets.on("connection", function (err, socket, session){
+	// Create data for session: session.<var> = <obj>
+	// Then save the data for the session: session.save()
+	session.foo = "bar";
+	session.save();
+
 	"use strict";
-	console.log("user connected");
+	console.log("some client connected");
 
 	// Client disconnects
 	socket.on("disconnect", function(){
 		console.log("user disconnected with socket id: " + socket.id);
 		// Remove the user from the room
-		client.hmget(socket.id, "room", "username", function (e, datalist){
-			client.lrem("roomusers" + datalist[0], 1, datalist[1]);
-			// Remove user from database
-			client.hget(socket.id, "username", function (e, name){
-				client.del(name);
-				client.del(socket.id);
-				// Refresh player list in waiting room
-				client.lrange("roomusers" + datalist[0], 0, -1, function (e, array){
-					array.forEach(function (e, i, a){
-						userToSocket[e].emit("usersInRoom", array);
-					});
-				});
-			});
+		var users = rooms[openRoomID].users;
+		var i = users.indexOf(socket);
+		users.splice(i, 1);
+		// Send message to all users in the room
+		users.forEach(function (sock, index, list){
+			sock.emit("usersInRoom", list);
 		});
 	});
 
 	// Client, with accepted username, is looking for a room to join
-	socket.on("username", function (username) {
+	sessionSockets.on("username", function (username) {
 		console.log("user " + username + " connected.");
 		// Associate username with socket object
 		userToSocket[username] = socket;
-		// Save socket in database based on socket ID
-		client.hmset(socket.id, "username", username, "room", openRoomID, "hand", 0, "pile", 0, "spoon", 0);
-		client.set(username, socket.id);
-		// Add user to the open room
-		client.rpush("roomusers" + openRoomID, username, function (e){
-			// If room is full, proceed to move to the actual game
-			client.llen("roomusers" + openRoomID, function (e, numUsers){
-				// Room is at max players, start the game
-				if (numUsers === MAX_PLAYERS){
-					client.lrange("roomusers" + openRoomID, 0, -1, function (e, array){
-						array.forEach(function (e, i, a){
-							userToSocket[e].emit("usersInRoom", array);
-						});
-					});
-					sio.emit("gameStart");
-					inGameRooms.push(openRoomID);
-					openRoomID++;
-				} else {
-					if (numUsers > 1) { // Found a player, now allow 30 seconds for more players to show up
-						waitTime = 30;
-					}
-					client.lrange("roomusers" + openRoomID, 0, -1, function (e, array){
-						array.forEach(function (e, i, a){
-							userToSocket[e].emit("usersInRoom", array);
-						});
-					});
-				}
+		// Save user session by initalizing data
+		session.hand = [];
+		session.pile = [];
+		session.spoon = false;
+		session.room = openRoomID;
+		session.username = username;
+		session.uid = socket.id;
+		session.save();
+
+		// Add user session to the open room
+		rooms[openRoomID].users.push(session);
+		// If room is full now
+		var roomsize = rooms[openRoomID].users.length;
+		if (roomsize === MAX_PLAYERS){
+			// Send messages to all users in the room
+			rooms[openRoomID].users.forEach(function (sock, index, users){
+				sock.emit("playerIndex", index);
+				sock.emit("gameStart");
+				sock.emit("usersInRoom", users);
 			});
-		});
+			openRoomID++;
+			rooms[openRoomID] = {"users": [], "spoons": 0};
+		} else {
+			if (roomsize > 1) {
+				waitTime = 30;
+			}
+			// Send message to all users in the room
+			rooms[openRoomID].users.forEach(function (sock, index, users){
+				sock.emit("usersInRoom", users);
+			});
+		}
 	});
 
 });
 //=============================================================================
 
 // Start the server
-http.listen(3000);
+server.listen(3000);
 
 
 // server establishes connection with Redis server
@@ -135,20 +148,6 @@ app.post("/connect", function (req, res){
 			// Username is already in use
 			res.json(-1);
 		} else { // Username is available
-			// Check if a room is open
-			var roomUsers = "roomusers" + openRoomID;
-			client.exists(roomUsers, function (e, result){
-				if (e){
-					console.error(e);
-				} else if (result !== 0) { // Romm exists, check if open still
-					client.llen(roomUsers, function (e, users){
-						if (users === MAX_PLAYERS){
-							// Make a new open room
-							openRoomID++;
-						}
-					});
-				}
-			});
 			// Valid username
 			res.json(1);
 		}
@@ -156,20 +155,16 @@ app.post("/connect", function (req, res){
 });
 
 setInterval(function(){
-	console.log("Games in progress: " + inGameRooms.length);
+	//console.log("Games in progress: " + inGameRooms.length);
 	console.log("Open Room ID: " + openRoomID);
-	client.llen("roomusers" + openRoomID, function (e, num){
-		console.log("Number of users in this room: " + num);
-	});
+	console.log("Number of users in this room: " + rooms[openRoomID].users.length);
 	console.log("Wait time remaining: " + waitTime);
 }, 5000);
 
 setInterval(function(){
-	client.llen("roomusers" + openRoomID, function (e, num){
-		if (num > 1){
-			waitTime--;
-		}
-	});
+	if (rooms[openRoomID].users.length > 1){
+		waitTime--;
+	}
 }, 1000);
 
 console.log("Server listening on port 3000...");
