@@ -12,7 +12,6 @@ var sessionStore = new expressSession.MemoryStore();
 var redis = require("redis");
 var client = redis.createClient();
 
-// Loads index.html inside /client folder
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(myCookieParser);
@@ -30,18 +29,32 @@ var io = socketIO(server);
 var SessionSockets = require("session.socket.io");
 var sessionSockets = new SessionSockets(io, sessionStore, myCookieParser);
 
-app.use(express.static(__dirname + "/client"));
+// Loads index.html inside /client folder
+app.use(express.static(__dirname + "/client")); // Apparently this line has to be here for sessions to work. Took 7 hours to figure that out.
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Maximum number of players per room. Games can start with fewer players if 30 second timer goes up.
-var MAX_PLAYERS = 8;
+var MAX_PLAYERS = 3;
+
+
+var openRoomID = 0; // Current room index that is accepting players
+var waitTime = 0;   // Amount of time remaining in the open room before a game forcibly starts
+// Collection of all existing rooms. Holds list of users connected to it, number of spoons on table, and a personal timer element.
+var rooms = {"0": {"users": {}, "spoons": 0, "timer": 0}};  
+// Collection of connected sockets. Format: USERNAME => SOCKET
+var userToSocket = {};
+
+//=============================================================================
+// Creating a standard 52 deck of cards
+//=============================================================================
 
 // Initialize deck of cards.
 var deckSchema = {
 	suits: ["s", "c", "d", "h"],
 	values: ["2", "3", "4", "5", "6", "7", "8", "9", "10", "j", "q", "k", "a"]
 };
+
 var initDeck = function (deck) {
 	var i, k,
 		retDeck = [],
@@ -55,43 +68,90 @@ var initDeck = function (deck) {
 	}
 	return(retDeck);
 };
+
 // Array shuffle function. Used to shuffle deck of cards.
 // Source: http://jsfromhell.com/array/shuffle
 var shuffle = function (o) {
     for(var j, x, i = o.length; i; j = Math.floor(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);
     return o;
 };
-var baseDeck = initDeck(deckSchema); // Deck Initialized
-//shuffledDeck = shuffle(baseDeck); // A new shuffled deck is created.
 
-// Socket.IO things============================================================
-var openRoomID = 0;
-var waitTime = 30;
-var rooms = {"0": {"users": [], "spoons": 0, "timer": 0}};
-var userToSocket = {};
+var baseDeck = initDeck(deckSchema); // Deck Initialized
+
+// A new shuffled deck is created. The slice(0) ensures a clone of baseDeck so that baseDeck is not modified by the sort.
+var shuffledDeck = shuffle(baseDeck.slice(0)); 
+
+
+function closeRoom(){
+	// Send messages to all users in the room
+	Object.keys(rooms[openRoomID].users).forEach(function (uname, index, users){
+		sock = userToSocket[uname];
+		sock.emit("playerIndex", index);
+		sock.emit("gameStart");
+		sock.emit("usersInRoom", users);
+	});
+	// Prepare the cards for the room
+	prepGame(openRoomID);
+
+	openRoomID++;
+	rooms[openRoomID] = {"users": {}, "spoons": 0, "timer": 0};
+}
+
+
+function prepGame(roomID){
+	var room = rooms[roomID],
+		users = room.users;
+	var deck = shuffle(baseDeck.slice(0));
+
+	// Deal out the players' hands
+	for (var i = 0; i < Object.keys(users).length; i++){
+		var name = Object.keys(users)[i],
+			user = users[name];
+		user.hand = deck.splice(0,4);
+		userToSocket[name].emit("playerHand", user.hand);
+	}
+	// Give remaining deck to first player's pile
+	Object.keys(users)[0].pile = deck;
+}
+
+//=============================================================================
+// Socket.IO
+//=============================================================================
 
 // Server receives connection from a client
 sessionSockets.on("connection", function (err, socket, session){
+	//--[ Note ]--------------------------------------------
 	// Create data for session: session.<var> = <obj>
 	// Then save the data for the session: session.save()
+	//------------------------------------------------------
 	console.log("some client connected");
 
 	// Client disconnects
 	socket.on("disconnect", function(){
-		console.log("user disconnected with socket id: " + socket.id);
 		// If the user didn't input a name, don't process any further
 		if (!session.username) return;
+
+		console.log(session.username + " disconnected with socket id: " + socket.id);
+		// Delete presence of the username being logged in
+		delete userToSocket[session.username];
 		// Get the room this user was in
 		var roomid = session.room;
 		// Get all users in this room
 		var users = rooms[roomid].users;
-		// Find this user and remove them
-		var i = users.indexOf(session.username);
-		users.splice(i, 1);
-		// Send message to all users in the room about disconnect
-		users.forEach(function (uname, index, users){
-			userToSocket[uname].emit("usersInRoom", users);
-		});
+		// Delete the user from the room
+		delete rooms[roomid].users[session.username];
+		// No more users in the room, so we can delete it
+		if (Object.keys(users).length === 0){
+			delete rooms[roomid];
+		} else {
+			// Send message to all users in the room about disconnect
+			Object.keys(users).forEach(function (uname, index, players){
+				userToSocket[uname].emit("usersInRoom", players);
+				// If only one user left, remove the timer
+				if (players.length === 1)
+					userToSocket[uname].emit("time", 0);
+			});
+		}
 	});
 
 	// Client, with accepted username, is looking for a room to join
@@ -100,41 +160,69 @@ sessionSockets.on("connection", function (err, socket, session){
 		// Associate username with socket object
 		userToSocket[username] = socket;
 		// Save user session by initalizing data
-		session.hand = [];
-		session.pile = [];
-		session.spoon = false;
 		session.room = openRoomID;
 		session.username = username;
 		session.uid = socket.id;
 		session.save();
 
+		var userData = {hand: [], pile: [], hasSpoon: false};
+
 		// Add user session to the open room
-		rooms[openRoomID].users.push(username);
+		rooms[openRoomID].users[username] = userData;
 		// If room is full now
-		var roomsize = rooms[openRoomID].users.length;
+		var roomsize = Object.keys(rooms[openRoomID].users).length;
 		if (roomsize === MAX_PLAYERS){
-			// Send messages to all users in the room
-			rooms[openRoomID].users.forEach(function (uname, index, users){
-				sock = userToSocket[uname];
-				sock.emit("playerIndex", index);
-				sock.emit("gameStart");
-				sock.emit("usersInRoom", users);
-			});
-			openRoomID++;
-			rooms[openRoomID] = {"users": [], "spoons": 0, "timer": 0};
+			closeRoom();
 		} else {
 			if (roomsize > 1) {
 				waitTime = 30;
+			} else {
+				waitTime = 0;
 			}
 			// Send message to all users in the room
-			rooms[openRoomID].users.forEach(function (uname, index, users){
-				userToSocket[uname].emit("usersInRoom", users);
-				userToSocket[uname].emit("time", waitTime);
+			Object.keys(rooms[openRoomID].users).forEach(function (user, index, users){
+				userToSocket[user].emit("usersInRoom", users);
+				userToSocket[user].emit("time", waitTime);
 			});
 		}
 	});
 
+//--------------------------------------------
+// In game messages
+//--------------------------------------------
+	// User is requesting the top card
+	socket.on("reqTopCard", function (){
+		// Get first item in user's pile (user.pile[0])
+		//socket.emit("getTopCard", card);
+	});
+
+	// User chose a card to discard and pass to the player on the left
+	socket.on("discard", function (index){
+		// Get the card based on the index (0-3 = hand, -1 = top card of pile)
+		// Put top card in hand if necessary
+		// Find user to the left, which should be a simple add one and modulo
+		// Put discarded card on end of pile (user.pile.push)
+
+		// At this point, if anyone's piles just changed from being empty, alert them
+		// usersToSocket[username].on("addPile")
+	});
+
+	// User is attempting to get the spoon located at some index
+	socket.on("getSpoon", function (index){
+		// Check if 4 of a Kind in hand or if the number of spoons is not at maximum
+
+		// If valid, confirm taking the spoon by telling all users
+		//io.emit("removeSpoon", index, thisUser);
+		
+		// Otherwise, penalize the player
+		//socket.emit("penalty");
+	});
+
+
 });
+
+//=============================================================================
+// Connect to Redis Database
 //=============================================================================
 
 // server establishes connection with Redis server
@@ -143,6 +231,9 @@ client.on("connect", function(){
 	console.log("Connected to Redis server");
 });
 
+//=============================================================================
+// AJAX request and responses
+//=============================================================================
 
 // User is checking to connect to server with username. Check if available username.
 app.post("/connect", function (req, res){
@@ -158,29 +249,37 @@ app.post("/connect", function (req, res){
 	}
 });
 
-setInterval(function(){
-	//console.log("Games in progress: " + inGameRooms.length);
-	console.log("Open Room ID: " + openRoomID);
-	console.log("Number of users in this room: " + rooms[openRoomID].users.length);
-	console.log("Wait time remaining: " + waitTime);
-}, 5000);
+//=============================================================================
+// Interval functions
+//=============================================================================
 
+// Wait Room timer. Decreases wait time each second and automatically starts the game if not
+// enough users are connected.
 setInterval(function(){
-	if (rooms[openRoomID].users.length > 1){
+	// If more than one user in the room
+	if (Object.keys(rooms[openRoomID].users).length > 1){
+		// Decrease the timer. If elapsed, forcibly start the game.
 		waitTime--;
 		if (waitTime === 0){
-			// Send messages to all users in the room
-			rooms[openRoomID].users.forEach(function (uname, index, users){
-				sock = userToSocket[uname];
-				sock.emit("playerIndex", index);
-				sock.emit("gameStart");
-				sock.emit("usersInRoom", users);
-			});
-			openRoomID++;
-			rooms[openRoomID] = {"users": [], "spoons": 0, "timer": 0};
+			closeRoom();
 		}
 	}
 }, 1000);
+
+
+
+// Prints out server stats every 5 seconds. Can be removed in final version.
+setInterval(function(){
+	//console.log("Games in progress: " + inGameRooms.length);
+	console.log("Open Room ID: " + openRoomID);
+	console.log("Number of users in this room: " + Object.keys(rooms[openRoomID].users).length);
+	console.log("Wait time remaining: " + waitTime);
+}, 5000);
+
+
+//=============================================================================
+// Start-up the server
+//=============================================================================
 
 // Start the server
 server.listen(3000);

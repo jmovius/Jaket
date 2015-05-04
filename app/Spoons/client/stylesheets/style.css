@@ -10,3 +10,7 @@ div.player {
   border: 15px solid navy;
   margin: 15px;
 }
+
+img.card {
+  zoom: 25%;
+}
