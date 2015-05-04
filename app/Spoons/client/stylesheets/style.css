@@ -11,6 +11,10 @@ div.player {
   margin: 15px;
 }
 
-img.card {
+#card {
   zoom: 25%;
+}
+
+#spoon {
+  zoom: 50%;
 }

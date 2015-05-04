@@ -79,15 +79,25 @@ var shuffle = function (o) {
 var baseDeck = initDeck(deckSchema); // Deck Initialized
 
 // A new shuffled deck is created. The slice(0) ensures a clone of baseDeck so that baseDeck is not modified by the sort.
-var shuffledDeck = shuffle(baseDeck.slice(0)); 
+//var shuffledDeck = shuffle(baseDeck.slice(0)); 
 
+function fourOfKind(cards){
+	var card = cards[0],
+		value = card.value;
+	for (var i = 1; i < 4; i++){
+		card = cards[i];
+		if (card.value !== value)
+			return false;
+	}
+	return true;
+}
 
 function closeRoom(){
 	// Send messages to all users in the room
 	Object.keys(rooms[openRoomID].users).forEach(function (uname, index, users){
 		sock = userToSocket[uname];
 		sock.emit("playerIndex", index);
-		sock.emit("gameStart");
+		sock.emit("gameStart", users.length - 1);
 		sock.emit("usersInRoom", users);
 	});
 	// Prepare the cards for the room
@@ -111,7 +121,10 @@ function prepGame(roomID){
 		userToSocket[name].emit("playerHand", user.hand);
 	}
 	// Give remaining deck to first player's pile
-	Object.keys(users)[0].pile = deck;
+	var dealerName = Object.keys(users)[0],
+		dealer = users[dealerName];
+	dealer.pile = deck;
+	userToSocket[dealerName].emit("updatePile", false);
 }
 
 //=============================================================================
@@ -137,6 +150,7 @@ sessionSockets.on("connection", function (err, socket, session){
 	session.uid = socket.id;
 	session.save();
 
+	
 	var userData = {hand: [], pile: [], hasSpoon: false};
 
 	// Add user session to the open room
@@ -174,7 +188,7 @@ sessionSockets.on("connection", function (err, socket, session){
 		// Delete the user from the room
 		delete rooms[roomid].users[session.username];
 		// No more users in the room, so we can delete it
-		if (Object.keys(users).length === 0){
+		if (Object.keys(users).length === 0 && roomid !== openRoomID){
 			delete rooms[roomid];
 		} else {
 			// Send message to all users in the room about disconnect
@@ -192,29 +206,68 @@ sessionSockets.on("connection", function (err, socket, session){
 //--------------------------------------------
 	// User is requesting the top card
 	socket.on("reqTopCard", function (){
-		// Get first item in user's pile (user.pile[0])
-		//socket.emit("getTopCard", card);
+		var username = session.username,
+			roomid = session.room,
+			pile = rooms[roomid].users[username].pile;
+		// Send the top card of the pile
+		socket.emit("getTopCard", pile[0]);
+		// Pile is now empty. Tell player this.
+		if (pile.length === 1)
+			socket.emit("updatePile", true);
 	});
 
 	// User chose a card to discard and pass to the player on the left
 	socket.on("discard", function (index){
+		var username = session.username,
+			roomid = session.room,
+			users = rooms[roomid].users,
+			hand = users[username].hand;
+			pile = users[username].pile;
 		// Get the card based on the index (0-3 = hand, -1 = top card of pile)
-		// Put top card in hand if necessary
+		var card;
+		if (index === "-1"){
+			card = pile.shift();
+		} else {
+			card = hand[index];
+			// Put top card in hand
+			hand[index] = pile.shift();
+		}
 		// Find user to the left, which should be a simple add one and modulo
+		var usernames = Object.keys(users),
+			playerSeat = usernames.indexOf(username),
+			leftSeat = (playerSeat + 1) % usernames.length,
+			leftPlayerName = usernames[leftSeat];
+			playerSocket = userToSocket[leftPlayerName];
 		// Put discarded card on end of pile (user.pile.push)
-
+		users[leftPlayerName].pile.push(card);
 		// At this point, if anyone's piles just changed from being empty, alert them
-		// usersToSocket[username].on("addPile")
+		if (users[leftPlayerName].pile.length === 1)
+			playerSocket.emit("updatePile", false);
 	});
 
 	// User is attempting to get the spoon located at some index
 	socket.on("getSpoon", function (index){
+		var username = session.username,
+			roomid = session.room,
+			users = rooms[roomid].users,
+			usernames = Object.keys(users),
+			spoons = rooms[roomid].spoons,
+			hand = users[username].hand;
 		// Check if 4 of a Kind in hand or if the number of spoons is not at maximum
-
-		// If valid, confirm taking the spoon by telling all users
-		//io.emit("removeSpoon", index, thisUser);
+		if (fourOfKind(hand) || spoons !== usernames.length - 1){
+			// If valid, confirm taking the spoon by telling all users
+			var userid = usernames.indexOf(username);
+			io.emit("removeSpoon", index, userid);
+			rooms[roomid].spoons--;
+			// If spoons is 0, send message to end game
+		} else {
+			// Otherwise, penalize the player
+			socket.emit("penalty");
+		}
 		
-		// Otherwise, penalize the player
+		//io.emit("removeSpoon", index, thisUser);
+
+		
 		//socket.emit("penalty");
 	});
 
