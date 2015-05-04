@@ -10,7 +10,7 @@ var myCookieParser = cookieParser("f4tk4t4u");
 var sessionStore = new expressSession.MemoryStore();
 
 var redis = require("redis");
-var client = redis.createClient();
+var rdb = redis.createClient();
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -124,7 +124,40 @@ sessionSockets.on("connection", function (err, socket, session){
 	// Create data for session: session.<var> = <obj>
 	// Then save the data for the session: session.save()
 	//------------------------------------------------------
-	console.log("some client connected");
+
+	console.log("some client connected; username: " + session.username);
+
+	// ***** SOCKET.ON("USERNAME", ...) ***** BEGIN
+	// Client, with accepted username, is looking for a room to join
+	console.log("user " + session.username + " connected.");
+	// Associate username with socket object
+	userToSocket[session.username] = socket;
+	// Save user session by initalizing data
+	session.room = openRoomID;
+	session.uid = socket.id;
+	session.save();
+
+	var userData = {hand: [], pile: [], hasSpoon: false};
+
+	// Add user session to the open room
+	rooms[openRoomID].users[session.username] = userData;
+	// If room is full now
+	var roomsize = Object.keys(rooms[openRoomID].users).length;
+	if (roomsize === MAX_PLAYERS){
+		closeRoom();
+	} else {
+		if (roomsize > 1) {
+			waitTime = 30;
+		} else {
+			waitTime = 0;
+		}
+		// Send message to all users in the room
+		Object.keys(rooms[openRoomID].users).forEach(function (user, index, users){
+			userToSocket[user].emit("usersInRoom", users);
+			userToSocket[user].emit("time", waitTime);
+		});
+	}
+	// ***** SOCKET.ON("USERNAME", ...) ***** END
 
 	// Client disconnects
 	socket.on("disconnect", function(){
@@ -150,39 +183,6 @@ sessionSockets.on("connection", function (err, socket, session){
 				// If only one user left, remove the timer
 				if (players.length === 1)
 					userToSocket[uname].emit("time", 0);
-			});
-		}
-	});
-
-	// Client, with accepted username, is looking for a room to join
-	socket.on("username", function (username) {
-		console.log("user " + username + " connected.");
-		// Associate username with socket object
-		userToSocket[username] = socket;
-		// Save user session by initalizing data
-		session.room = openRoomID;
-		session.username = username;
-		session.uid = socket.id;
-		session.save();
-
-		var userData = {hand: [], pile: [], hasSpoon: false};
-
-		// Add user session to the open room
-		rooms[openRoomID].users[username] = userData;
-		// If room is full now
-		var roomsize = Object.keys(rooms[openRoomID].users).length;
-		if (roomsize === MAX_PLAYERS){
-			closeRoom();
-		} else {
-			if (roomsize > 1) {
-				waitTime = 30;
-			} else {
-				waitTime = 0;
-			}
-			// Send message to all users in the room
-			Object.keys(rooms[openRoomID].users).forEach(function (user, index, users){
-				userToSocket[user].emit("usersInRoom", users);
-				userToSocket[user].emit("time", waitTime);
 			});
 		}
 	});
@@ -226,7 +226,7 @@ sessionSockets.on("connection", function (err, socket, session){
 //=============================================================================
 
 // server establishes connection with Redis server
-client.on("connect", function(){
+rdb.on("connect", function(){
 	"use strict";
 	console.log("Connected to Redis server");
 });
@@ -235,18 +235,94 @@ client.on("connect", function(){
 // AJAX request and responses
 //=============================================================================
 
-// User is checking to connect to server with username. Check if available username.
-app.post("/connect", function (req, res){
+app.get("/", function (req, res) {
 	"use strict";
-	var username = req.body.username;
-	// Check if username is already taken
-	if (userToSocket[username]){
-		// Username is already in use
-		res.json(-1);
+
+	console.log("isAuthorized: " + req.session.isAuthorized);
+
+	if(req.session.isAuthorized) {
+        res.sendFile(__dirname + "/client/default.html");
 	} else {
-		// Username is available
-		res.json(1);
+        res.redirect("/login");
 	}
+});
+
+app.get("/register", function (req, res) {
+	"use strict";
+
+	res.sendFile(__dirname + "/client/register.html");
+});
+
+app.post("/register", function (req, res){
+	"use strict";
+
+	console.log("Username: " + req.body.username.toLowerCase() + "\nPassword: " + req.body.password);
+
+	rdb.exists(req.body.username.toLowerCase(), function (err, reply) {
+		if(err) {
+			console.log(err);
+			return res.json({ msg:"Server was unable to complete the registration. Please try again."})
+		}
+
+	    if (reply === 1) {
+			return res.json({ msg:"Username already exists." });
+	    } else {
+	    	rdb.hmset(req.body.username.toLowerCase(), {
+    			"password": req.body.password,
+    			"rank":"0",
+    			"gamesPlayed": "0"
+			});
+	    	req.body.password;
+	    	return res.json({ msg:"success" })
+	    }
+	});
+});
+
+app.get("/login", function (req, res) {
+	"use strict";
+
+	res.sendFile(__dirname + "/client/login.html");
+});
+
+app.get("/logout", function (req, res) {
+	"use strict";
+
+	req.session.destroy();
+	res.sendFile(__dirname + "/client/login.html");
+});
+
+// User is checking to connect to server with username. Check if available username.
+app.post("/login", function (req, res){
+	"use strict";
+
+	var un = req.body.username.toLowerCase();
+
+	console.log("Username: " + un + "\nPassword: " + req.body.password);
+	rdb.hgetall(un, function (err, user) {
+		if(err) {
+			console.log(err);
+			return res.json({ msg:"Server was unable to complete the login. Please try again." })
+		}
+
+		if (user !== null) {
+			if(user.password === req.body.password) {
+				console.log(user);
+				req.session.isAuthorized = true;
+				req.session.username = un;
+				req.session.rank = user.rank;
+				req.session.gamesPlayed = user.gamesPlayed;
+				
+				return res.json({ msg:"success" });
+			} else {
+				req.session.isAuthorized = false;
+				console.log("Incorrect Password - isAuthorized: " + req.session.isAuthorized);
+				return res.json({ msg:"Invalid username/password." });
+			}
+		} else {
+			req.session.isAuthorized = false;
+			return res.json({ msg:"Invalid username/password." });
+		}
+	});
 });
 
 //=============================================================================

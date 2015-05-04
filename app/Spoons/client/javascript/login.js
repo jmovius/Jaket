@@ -1,0 +1,36 @@
+var main = function () {
+    "use strict";
+
+    var $btn_login = $("#btn_login");
+
+    $btn_login.on("click", function () {
+        if($("#username").val() !== "" && $("#password").val() !== "") {
+            var hash = CryptoJS.SHA256($("#password").val()).toString();
+
+            $.post("/login",{ username:$("#username").val(), password:hash }).done(function (response) {
+                if(response.msg === "success") {
+                    $(location).attr("href","/");
+                } else {
+                    document.getElementById("alert").innerHTML = response.msg;
+                }
+                $("#password").val("");
+            });
+        } else {
+            document.getElementById("alert").innerHTML = "Username/Password required.";
+        }
+    });
+
+    $("#username").on("keyup", function (e) {
+        if (e.keyCode === 13) {
+            $("#password").focus();
+        }
+    });
+
+    $("#password").on("keyup", function (e) {
+        if (e.keyCode === 13) {
+            $btn_login.click();
+        }
+    });
+};
+
+$(document).ready(main);

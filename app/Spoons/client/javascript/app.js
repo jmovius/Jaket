@@ -1,10 +1,3 @@
-var scene = 0;
-var LOGIN = 0,		// Login scene
-	WAITING = 1,	// Waiting room scene
-	GAME = 2,		// Playing game scene
-	TRANSITION = 3;	// Scene where it's transitioning to another scene
-
-
 var main = function () {
 	"use strict";
 
@@ -12,43 +5,12 @@ var main = function () {
 	var playerIndex = 0;
 	var socket = io();
 	var timer = 0;
+	var scene = 1;		// Login is no longer part of this page.
+	var WAITING = 1,	// Waiting room scene
+		GAME = 2,		// Playing game scene
+		TRANSITION = 3;	// Scene where it's transitioning to another scene
 
 	var countdownInterval;
-
-//=============================================================================
-// DOM Events
-//=============================================================================
-
-	// Assign action to submit button
-	$("input.userSubmit").on("click", function(event){
-		event.preventDefault();
-		// Get username
-		username = $("input.username").val();
-		// Send username to server and determine if already used
-		$.post("/connect", {"username": username}, function (res){
-			var msg;
-			
-			if (res === 1){
-				// Username is accepted
-				socket.emit("username", username);
-				// Remove input stuff
-				$("div.initialView").empty();
-				$("div.waitingRoom").show();
-				scene = 1;
-			} else {
-				// Write message based on server's response
-				if (res === 0){ 
-					msg = "An error occurred. Try Again.";
-				} else if (res === -1){ 
-					msg = "This username is already used!";
-				}
-				// Create DOM
-				$("input.username").val("");
-				var $msg = $("<h3>").text(msg);
-				$("div.result").empty().append($msg);
-			}
-		});
-	});
 
 //=============================================================================
 // Socket.IO
@@ -171,7 +133,7 @@ var main = function () {
 //=============================================================================
 
 // Initially hiding these DIV elements as they are for different scenes
-$("div.waitingRoom").hide();
+//$("div.waitingRoom").hide();
 $("div.gameScene").hide();
 
 $(document).ready(main);
