@@ -1,0 +1,35 @@
+body {
+	background: #E6E6E6;
+	font-family: Calibri, Verdana, Helvetica, sans-serif;
+}
+
+body .container {
+	padding: 1em;
+}
+
+h2 {
+	font-size: 1.5em;
+}
+
+body .description {
+	padding-bottom: 2em;
+	width: 400px;
+}
+
+body .alert {
+	text-align: left;
+	font-size: 0.75em;
+	font-weight: bold;
+	color: red;
+}
+
+body .login {
+	width: 400px;
+}
+
+.login-label {
+}
+
+body .form-group {
+	max-width: 300px;
+}
