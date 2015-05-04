@@ -4,25 +4,30 @@
         <meta charset="utf-8">
         <title>Spoons!</title>
         <link href="stylesheets/reset.css" rel="stylesheet" type="text/css">
-        <link href="stylesheets/style.css" rel="stylesheet" type="text/css">
-        <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css" type="text/css">
+        <link href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+        <link href="stylesheets/login.css" rel="stylesheet" type="text/css">
     </head>
 
     <body>
         <div class="container">
-            <h1>Play Spoons!</h1>
-        </div>
-
-        <div class="panel panel-default">
-            <div class="panel-body">
-                <span id="alert" class="alert"></span>
-                <label class="login-label">Username:</label>
-                <input id="username" type="text" class="login">
-                <label class="login-label">Password:</label>
-                <input id="password" type="password" class="login">
-                <button id="btn_login" class="login-label btn btn-primary">Login</button>
+            <div class="description">
+                <h1>Spoons!</h1>
+                <p>The real-time online multiplayer card game where you race against other players to get four of a kind and grab a spoon before your opponents!</p>
             </div>
-            <a href="/register">Not a member? Sign up now!</a>
+        
+            <div class="login">
+                <span id="alert" class="alert"></span>
+                <div class="form-group">
+                    <label class="login-label">Username:</label>
+                    <input id="username" type="text" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label class="login-label">Password:</label>
+                    <input id="password" type="password" class="form-control">
+                </div>
+                <button id="btn_login" class="login-label btn btn-primary">Login</button>
+                <a href="/register">Not a member? Sign up now!</a>
+            </div>
         </div>
 
         <script src="http://code.jquery.com/jquery-1.11.2.min.js"></script>

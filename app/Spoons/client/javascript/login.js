@@ -17,7 +17,12 @@ var main = function () {
             });
         } else {
             document.getElementById("alert").innerHTML = "Username/Password required.";
+            $("#password").val("");
         }
+    });
+    
+    $("#username, #password").on("focus", function (e) {
+        document.getElementById("alert").innerHTML = "";
     });
 
     $("#username").on("keyup", function (e) {

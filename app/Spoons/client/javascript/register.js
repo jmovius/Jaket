@@ -17,9 +17,17 @@ var main = function () {
             });
         } else if ($("#username").val() === "" || $("#password").val() === "") {
             document.getElementById("alert").innerHTML = "Username/Password required.";
+            $("#password").val("");
+            $("#confirmPassword").val("");
         } else {
             document.getElementById("alert").innerHTML = "Passwords do not match.";
+            $("#password").val("");
+            $("#confirmPassword").val("");
         }
+    });
+
+    $("#username, #password, #confirmPassword").on("focus", function (e) {
+        document.getElementById("alert").innerHTML = "";
     });
 
     $("#username").on("keyup", function (e) {
@@ -29,6 +37,12 @@ var main = function () {
     });
 
     $("#password").on("keyup", function (e) {
+        if (e.keyCode === 13) {
+            $("#confirmPassword").focus();
+        }
+    });
+
+    $("#confirmPassword").on("keyup", function (e) {
         if (e.keyCode === 13) {
             $btn_submit.click();
         }
