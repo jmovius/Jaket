@@ -1,8 +1,26 @@
+/*
+ * Maintain aspect ratio of DIV using CSS.
+ * Source: http://stackoverflow.com/questions/12121090/responsively-change-div-size-keeping-aspect-ratio
+ */
+.aspectRatio {
+	width: 100%;
+	display: inline-block;
+	position: relative;
+}
+.aspectRatio:after {
+	padding-top: 65.44%;
+	/* 1070:700; ratio */
+	display: block;
+	content: '';
+}
+
 .gameScene {
-    margin: 50px;
-    position: relative;
-    width: 1070px;
-    height: 700px;
+	margin: 5px;
+    position: absolute;
+    top: 0%;
+    bottom: 0%;
+    left: 0%;
+    right: 0%;
 }
 
 #card {
@@ -33,64 +51,78 @@
 }
 
 .spoons {
+	background: #8C8681;
+	/*background-image: url(../images/table.png);
+	background-repeat: repeat;*/
 	text-align: center;
-    border: solid black 1px;
+    border: solid #744400 1px;
     width: 72%;
     height: 39.3%;
     position: absolute;
     top: 21.4%;
     left: 14%;
+    border-radius: 25px;
 }
 
 .hand {
+	background: black;
     border: solid black 1px;
     width: 46.5%;
     height: 26%;
     position: absolute;
-    top: 475px;
-    left: 150px;
+    top: 67.9%;
+    left: 14%;
 }
 
 .topcard {
+	background: black;
     border: solid black 1px;
     width: 11.8%;
     height: 26%;
     position: absolute;
-    top: 475px;
-    left: 660px;
+    top: 67.9%;
+    left: 61.7%;
 }
 
 .pile {
+	background: black;
     border: solid black 1px;
     width: 11.8%;
     height: 26%;
     position: absolute;
-    top: 500px;
-    left: 795px;
+    top: 71.4%;
+    left: 74.3%;
+}
+
+.pile, .topcard, .hand {
+	background: #666A73;
+    border-radius: 5px;
+	overflow: hidden;
 }
 
 .player {
+	background: #D9D1C7;
 	vertical-align: middle;
 	text-align: center;
-	overflow: hidden;
 	text-overflow: ellipsis;
-    background-color: #E6E6E6;
-    width: 100px;
-    height: 100px;
-    border: 15px solid;
+    width: 9.3%;
+    height: 14.3%;
+    border: 10px solid;
+    border-radius: 15px;
+	overflow: hidden;
 }
 
 .u0 {
     border-color: #0000CC;
     position: absolute;
-    top: 300px;
+    top: 42.9%;
     left: 0%;
 }
 
 .u1 {
     border-color: #CC00CC;
     position: absolute;
-    top: 175px;
+    top: 25%;
     left: 0%;
 }
 
@@ -98,33 +130,33 @@
     border-color: #00CC00;
     position: absolute;
     top: 0%;
-    left: 360px;
+    left: 33.6%;
 }
 
 .u3 {
     border-color: #CCCC00;
     position: absolute;
     top: 0%;
-    left: 485px;
+    left: 45.3%;
 }
 
 .u4 {
     border-color: #336666;
     position: absolute;
     top: 0%;
-    left: 610px;
+    left: 57%;
 }
 
 .u5 {
     border-color: #CC0000;
     position: absolute;
-    top: 300px;
+    top: 42.9%;
     right: 0%;
 }
 
 .u6 {
     border-color: #663300;
     position: absolute;
-    top: 175px;
+    top: 25%;
     right: 0%;
 }
