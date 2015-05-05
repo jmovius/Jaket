@@ -1,16 +1,11 @@
-/*
-* {
-    margin: 0;
-    padding: 0;
-}
-*/
-
 #card {
-    zoom: 25%;
+	width: 124px;
+	height: 180px;
 }
 
 #spoon {
-    zoom: 50%;
+    width: 58px;
+    height: 273px;
 }
 
 .playerTable {
@@ -33,6 +28,7 @@
 }
 
 .spoons {
+	text-align: center;
     border: solid black 1px;
     width: 770px;
     height: 275px;
@@ -43,8 +39,8 @@
 
 .hand {
     border: solid black 1px;
-    width: 500px;
-    height: 200px;
+    width: 498px;
+    height: 182px;
     position: absolute;
     top: 475px;
     left: 150px;
@@ -52,8 +48,8 @@
 
 .topcard {
     border: solid black 1px;
-    width: 125px;
-    height: 200px;
+    width: 126px;
+    height: 182px;
     position: absolute;
     top: 475px;
     left: 660px;
@@ -61,14 +57,18 @@
 
 .pile {
     border: solid black 1px;
-    width: 125px;
-    height: 200px;
+    width: 126px;
+    height: 182px;
     position: absolute;
     top: 500px;
     left: 795px;
 }
 
 .player {
+	vertical-align: middle;
+	text-align: center;
+	overflow: hidden;
+	text-overflow: ellipsis;
     background-color: #E6E6E6;
     width: 100px;
     height: 100px;
