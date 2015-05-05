@@ -3,15 +3,24 @@ var main = function () {
 
 	var username;
 	var playerIndex = 0;
+	var topCardVisible = false;
+	var inactiveCounter = 0; // Counts how many times in a row the game catches the player not doing anything. Too many and the user is kicked.
 	var socket = io();
-	var timer = 0;
+
 	var scene = 1;		// Login is no longer part of this page.
 	var WAITING = 1,	// Waiting room scene
 		GAME = 2,		// Playing game scene
 		TRANSITION = 3;	// Scene where it's transitioning to another scene
-	var topCardVisible = false;
 
-	var countdownInterval;
+	// Represents the timer DOM object displayed on the page. Used for indicating when the next game will being.
+	var gameTimer = 0;
+	var gameInterval;
+	// Represents the time the player cannot grab a spoon.
+	var penaltyTimer = 0;
+	var penaltyInterval;
+	// Represents the time since the player's last action. If inactive for too long, penaltyTimer is set. Repeat too long and the user is kicked.
+	var inactiveTimer = 0;
+	var inactiveInterval;
 
 //=============================================================================
 // Socket.IO
@@ -52,22 +61,24 @@ var main = function () {
 
 	// Get some time element from the server to display and countdown on the page
 	socket.on("time", function (time){
-		timer = time;
+		gameTimer = time;
 		if (time > 0){
-			$("div.timer").text(timer);
-			console.log(countdownInterval);
-			startTimer();
+			// Ensure that the current timer is stopped before starting a new one
+			stopGameTimer();
+			$("div.timer").text(time);
+			startGameTimer();
 		} else {
 			$("div.timer").text("");
-			stopTimer();
+			stopGameTimer();
 		}
 	});
 
 	// Notify the client that the game is starting. Transition to the new scene
 	socket.on("gameStart", function (spoons){
-		scene = 2;
-		timer = 0;
-		stopTimer();
+		scene = GAME;
+		//gameTimer = 5;
+		//stopGameTimer();
+		//startGameTimer();
 		$("div.timer").text("");
 		$("div.waitingRoom").hide();
 		$("div.gameScene").show();
@@ -77,8 +88,10 @@ var main = function () {
 				src: "images/spoon.png",
 				id: "spoon"
 			});
+			// Clicking the spoon (only allowed if game is actually running and not penalized). Sends the spoon's index.
 			$img.click(function(){
-				socket.emit("getSpoon", this.className);
+				if (gameTimer === 0 && penaltyTimer === 0)
+					socket.emit("getSpoon", this.className);
 			});
 			$("div.spoons").append($img);
 		}
@@ -98,7 +111,7 @@ var main = function () {
 			// Give the card a click event
 			$img.click(function(){
 				// Top card is showing
-				if (topCardVisible) {
+				if (topCardVisible && gameTimer === 0) {
 					// Get card index based on IMG's class
 					var index = this.className;
 					socket.emit("discard", index);
@@ -115,7 +128,6 @@ var main = function () {
 
 	// Get the top card from the pile
 	socket.on("getTopCard", function (card){
-		console.log(card);
 		var cardname = card.suit + card.value;
 		var $img = $("<img>").addClass("-1").attr({
 			src: "images/deck/" + cardname + ".png",
@@ -125,7 +137,7 @@ var main = function () {
 		// Give the card a click event
 		$img.click(function(){
 			// Top card is showing
-			if (topCardVisible) {
+			if (topCardVisible && gameTimer === 0) {
 				// Get card index based on IMG's class
 				var index = this.className;
 				socket.emit("discard", index);
@@ -147,8 +159,8 @@ var main = function () {
 				id: "card"
 			});
 			$img.click(function(){
-				// Only allow clicking the pile if not viewing the top card
-				if (!topCardVisible)
+				// Only allow clicking the pile if not viewing the top card and game has started
+				if (!topCardVisible && gameTimer === 0)
 					socket.emit("reqTopCard");
 			});
 			$("div.pile").append($img);
@@ -162,7 +174,22 @@ var main = function () {
 
 	// If tried going for a spoon illegally, get penalized
 	socket.on("penalty", function (){
+		console.log("PENALTY");
+	});
 
+	socket.on("gameresult", function (uname, gameover){
+		// If you are the loser
+		if (username === uname) {
+			// display lose message
+			// display button that will send user to open room
+		} else {
+			// display who lost
+			// countdown timer until next round
+			if (!gameover){
+				gameTimer = 8;
+				startGameTimer();
+			}
+		}
 	});
 
 
@@ -171,25 +198,57 @@ var main = function () {
 //=============================================================================
 
 	// If there is a timer going on, decrease it and display on page
-	function startTimer() {
-		if (countdownInterval) return;
-		console.log("was null");
-		countdownInterval = setInterval(function(){
-			if (timer > 0){
-				timer--;
-				$("div.timer").text(timer);
+	function startGameTimer() {
+		if (gameInterval) return;
+		gameInterval = setInterval(function (){
+			if (gameTimer > 0){
+				gameTimer--;
+				$("div.timer").text(gameTimer);
 			} else {
 				$("div.timer").text("");
-				stopTimer();
+				stopGameTimer(gameInterval);
 			}
 		}, 1000);
 	}
 
-	function stopTimer() {
-		clearInterval(countdownInterval);
-		countdownInterval = null;
+	function stopGameTimer() {
+		clearInterval(gameInterval);
+		gameInterval = null;
 	}
 
+	// Inactivity timer
+	function startInactiveTimer() {
+		if (inactiveInterval) return;
+		inactiveInterval = setInterval(function (){
+			if (inactiveTimer > 0){
+				inactiveTimer--;
+			} else {
+				stopInactiveTimer(inactiveInterval);
+			}
+		}, 1000);
+	}
+
+	function stopInactiveTimer() {
+		clearInterval(inactiveInterval);
+		inactiveInterval = null;
+	}
+
+	// Penalty timer
+	function startPenaltyTimer() {
+		if (penaltyInterval) return;
+		penaltyInterval = setInterval(function (){
+			if (penaltyTimer > 0){
+				penaltyTimer--;
+			} else {
+				stopPenaltyTimer(penaltyInterval);
+			}
+		}, 1000);
+	}
+
+	function stopPenaltyTimer() {
+		clearInterval(penaltyInterval);
+		penaltyInterval = null;
+	}
 };
 
 //=============================================================================

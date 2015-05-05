@@ -41,7 +41,7 @@ var MAX_PLAYERS = 3;
 var openRoomID = 0; // Current room index that is accepting players
 var waitTime = 0;   // Amount of time remaining in the open room before a game forcibly starts
 // Collection of all existing rooms. Holds list of users connected to it, number of spoons on table, and a personal timer element.
-var rooms = {"0": {"users": {}, "spoons": 0, "timer": 0}};  
+var rooms = {"0": {"users": {}, "spoons": 0, "timerRunning": false}};  
 // Collection of connected sockets. Format: USERNAME => SOCKET
 var userToSocket = {};
 
@@ -99,8 +99,13 @@ function fourOfKind(cards){
 
 // Close the waiting room and prepare for a new game
 function closeRoom(){
+	var room = rooms[openRoomID],
+		usernames = Object.keys(room.users);
+	// Set the number of spoons in the room
+	room.spoons = usernames.length - 1;
 	// Send messages to all users in the room
-	Object.keys(rooms[openRoomID].users).forEach(function (uname, index, users){
+	usernames.forEach(function (uname, index, users){
+
 		sock = userToSocket[uname];
 		sock.emit("playerIndex", index);
 		sock.emit("gameStart", users.length - 1);
@@ -110,7 +115,7 @@ function closeRoom(){
 	prepGame(openRoomID);
 
 	openRoomID++;
-	rooms[openRoomID] = {"users": {}, "spoons": 0, "timer": 0};
+	rooms[openRoomID] = {"users": {}, "spoons": 0, "timerRunning": false};
 }
 
 // Prepares the game by shuffling the deck and dealing out cards
@@ -125,12 +130,52 @@ function prepGame(roomID){
 			user = users[name];
 		user.hand = deck.splice(0,4);
 		userToSocket[name].emit("playerHand", user.hand);
+		userToSocket[name].emit("time", 5);
 	}
 	// Give remaining deck to first player's pile
 	var dealerName = Object.keys(users)[0],
 		dealer = users[dealerName];
 	dealer.pile = deck;
 	userToSocket[dealerName].emit("updatePile", false);
+	// Set room timer to 5 seconds, indicating how long of a wait until game starts
+	room.timerRunning = true;
+	setTimeout(turnOffTimer(roomID), 5000);
+}
+
+function gameover(roomid){
+	var room = rooms[roomid],
+		users = room.users,
+		usernames = Object.keys(users),
+		user;
+	// If only one user in this room, win by default (caused when all other players disconnect)
+	if (usernames.length === 1){
+		userToSocket[usernames[0]].emit("gameresult", null, true);
+	} else {
+		// Evaluate each user to find the one who did not get the spoon
+		var i = 0
+		for (i; i < usernames.length; i++){
+			user = users[usernames[i]];
+			if (!user.hasSpoon){
+				break;
+			}
+		}
+		var gameComplete = (usernames.length === 2);
+		// Now tell the players the results
+		usernames.forEach(function (uname, index, players){
+			userToSocket[uname].emit("gameresult", usernames[i], gameComplete);
+			// If this is the losing player, delete them from the room
+			if (index === i)
+				delete users[uname];
+		});
+		// Set room timer to 8 seconds, indicating how long of a wait until next round
+		room.timerRunning = true;
+		setTimeout(turnOffTimer(roomid), 8000);
+	}
+}
+
+// After having set a timer on for the room, turn it off with this method called in a setTimeout
+function turnOffTimer(roomid){
+	rooms[roomid].timerRunning = false;
 }
 
 //=============================================================================
@@ -192,26 +237,52 @@ sessionSockets.on("connection", function (err, socket, session){
 		// Get the room this user was in and its players
 		var roomid = session.room,
 			room = rooms[roomid],
-			users = room.users;
+			users = room.users,
+			usernames = Object.keys(users),
+			user = users[session.username];
 
-		// Check if currently in game (Tyler is currently working on this)
-		//if (rooms)
-
-
-
-		// Delete the user from the room
-		delete rooms[roomid].users[session.username];
-		// No more users in the room, so we can delete it
-		if (Object.keys(users).length === 0 && roomid !== openRoomID){
-			delete rooms[roomid];
-		} else {
-			// Send message to all users in the room about disconnect
-			Object.keys(users).forEach(function (uname, index, players){
-				userToSocket[uname].emit("usersInRoom", players);
-				// If only one user left, remove the timer
-				if (players.length === 1)
-					userToSocket[uname].emit("time", 0);
-			});
+		// Check if currently in game
+		if (roomid !== openRoomID){
+			console.log("In game");
+			// Check if in the setup phase of the game (timer is counting down)
+			if (room.timerRunning){
+				// If the player was the dealer (first person in users array)
+				if (usernames[0] === session.username){
+					// Their hand and pile will shift to the next user
+					users[usernames[1]].pile.concat(user.hand, user.pile);
+				} else { 
+					// The player's hand will be sent to the dealer
+					users[0].pile.concat(user.hand);
+				}
+			} else { // Currently IN game
+				// Put player's pile and hand into next person's pile
+				var seatid = usernames.indexOf(session.username),
+					nextseatid = (seatid + 1) % usernames.length;
+				users[usernames[nextseatid]].pile.concat(user.hand, user.pile);
+				// Remove a spoon from the game
+				room.spoons--;
+				// If doing this causes the game to end, end the game
+				if (room.spoons <= 0) {}
+					// SOME FUNCTION
+			}
+			// Delete the user from the room
+			delete rooms[roomid].users[session.username];
+		} else { // Currently in waiting room
+			// No more users in the room, so we can delete it
+			if (usernames.length === 0){
+				delete rooms[roomid];
+			} else {
+				// Delete the user from the room
+				delete rooms[roomid].users[session.username];
+				// Send message to all users in the room about disconnect
+				usernames = Object.keys(users); // Redo since we deleted a user
+				usernames.forEach(function (uname, index, players){
+					userToSocket[uname].emit("usersInRoom", players);
+					// If only one user left, remove the timer
+					if (players.length === 1)
+						userToSocket[uname].emit("time", 0);
+				});
+			}
 		}
 	});
 
