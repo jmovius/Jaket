@@ -1,20 +1,58 @@
-* {
-    margin: 0;
-    padding: 0;
+body {
+	background: #E6E6E6;
+	font-family: Calibri, Verdana, Helvetica, sans-serif;
 }
 
-div.player {
-  background-color: lightgrey;
-  width: 100px;
-  padding: 15px;
-  border: 15px solid navy;
-  margin: 15px;
+body .container {
+	padding: 1em;
 }
 
-#card {
-  zoom: 25%;
+h2 {
+	font-size: 1.5em;
 }
 
-#spoon {
-  zoom: 50%;
+h3 {
+	padding: 1em;
+}
+
+body .description {
+	padding-bottom: 2em;
+	width: 400px;
+}
+
+body .alert {
+	text-align: left;
+	font-size: 0.75em;
+	font-weight: bold;
+	color: red;
+}
+
+body .login {
+	width: 400px;
+}
+
+.login-label {
+}
+
+body .form-group {
+	max-width: 300px;
+}
+
+/* Header */
+header {
+	background: white;
+	overflow: auto;
+	border-bottom: 1px solid;
+	border-color: #D3D3D3;
+}
+
+header nav {
+	display: inline-block;
+	width: 285px;
+	text-align: center;
+}
+
+.h1nav {
+	display: inline-block;
+	font-size: 2em;
 }

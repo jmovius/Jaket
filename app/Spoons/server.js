@@ -369,31 +369,34 @@ rdb.on("connect", function(){
 // AJAX request and responses
 //=============================================================================
 
-// 
+// Defaults to the login page.
 app.get("/", function (req, res) {
 	"use strict";
-	// TESTING -- Will not automatically throw a user already logged in to default.html in a new tab.
-	// I need this to connect with many users and test the game.
+
 	res.redirect("/login");
 	return;
+});
 
-	console.log("isAuthorized: " + req.session.isAuthorized);
-
+// If a user has logged in (isAuthorized == true), then they are directed to the maing page;
+// otherwise, the user is directed to the login page.
+app.get("/spoons", function (req, res) {
 	if(req.session.isAuthorized) {
 		res.sendFile(__dirname + "/client/default.html");
 	} else {
 		res.redirect("/login");
 	}
+	return;
 });
 
-// User requesting to register for an account; redirect to registration page
+// User requesting to register for an account; redirect to registration page.
 app.get("/register", function (req, res) {
 	"use strict";
 
 	res.sendFile(__dirname + "/client/register.html");
+	return;
 });
 
-// User submits their registration data
+// User submits their registration data and it is saved to the database.
 app.post("/register", function (req, res){
 	"use strict";
 
@@ -413,26 +416,27 @@ app.post("/register", function (req, res){
 				"rank":"0",
 				"gamesPlayed": "0"
 			});
-			//req.body.password; <------------------------ don't think this is supposed to be here
-			//res.redirect("/login");
 			return res.json({ msg:"success" }) // We really should redirect back to home page
 		}
 	});
 });
 
-// Not sure if this is ever called
+// When a user is directed to the login route, the login page is loaded.
 app.get("/login", function (req, res) {
 	"use strict";
 
 	res.sendFile(__dirname + "/client/login.html");
+	return;
 });
 
-// Don't have one of these yet
+// Logs the user out of the server by destroying their active session and redirecting to the login route.
+// At this point the user would have to log in again.
 app.get("/logout", function (req, res) {
 	"use strict";
 
 	req.session.destroy();
-	res.sendFile(__dirname + "/client/login.html");
+	res.redirect("/login");
+	return;
 });
 
 // User requesting to login to their account

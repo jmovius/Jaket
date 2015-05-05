@@ -3,19 +3,30 @@
     <head>
         <meta charset="utf-8">
         <title>Spoons!</title>
-        <!-- <link href="stylesheets/reset.css" rel="stylesheet" type="text/css"> -->
+        <link href="stylesheets/reset.css" rel="stylesheet" type="text/css">
+        <link href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css" rel="stylesheet" type="text/css">
         <link href="stylesheets/style.css" rel="stylesheet" type="text/css">
-        <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css" type="text/css">
+        <link href="stylesheets/game.css" rel="stylesheet" type="text/css">
     </head>
 
     <body>
+        <header>
+            <div class="container">
+                <h1 class="h1nav">Spoons!</h1>
+                <nav>
+                    New Game |
+                    <a href="/logout">Logout</a>
+                </nav>
+            </div>
+        </header>
+
         <!-- Timer element for displaying countdowns. Visible on multiple scenes.-->
         <div class="timer"></div>
 
         <!-- WAITING ROOM where players wait for other users to join the room -->
         <div class="waitingRoom">
-            <h1>WAITING FOR PLAYERS...</h1>
-            <table border="1" style="width:100%">
+            <h3>Waiting for players...</h3>
+            <table class="playerTable">
                 <td class="index"></td>
                 <td class="user"></td>
             </table>

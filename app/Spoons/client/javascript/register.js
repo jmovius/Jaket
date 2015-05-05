@@ -9,8 +9,10 @@ var main = function () {
 
             $.post("/register",{ username:$("#username").val(), password:hash }).done(function (response) {
                 if(response.msg === "success") {
-                    document.getElementById("alert").innerHTML = response.msg;
-                    $(location).attr("href","/"); // Will be a delayed redirect.
+                    document.getElementById("alert").innerHTML = "<p style=\"color:blue\">Registration successful!</p>";
+                    window.setTimeout(function () {
+                        $(location).attr("href","/");
+                    }, 1000);
                 } else {
                     document.getElementById("alert").innerHTML = response.msg;
                 }
