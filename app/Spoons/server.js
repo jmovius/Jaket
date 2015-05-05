@@ -310,7 +310,7 @@ sessionSockets.on("connection", function (err, socket, session){
 			pile = users[username].pile;
 		// Get the card based on the index (0-3 = hand, -1 = top card of pile)
 		var card;
-		if (index === "-1"){
+		if (index === "top"){
 			card = pile.shift();
 		} else {
 			card = hand[index];

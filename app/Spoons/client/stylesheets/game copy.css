@@ -1,23 +1,11 @@
-.gameScene {
-    margin: 50px;
-    position: relative;
-    width: 1070px;
-    height: 700px;
-}
-
 #card {
-	width: 25%;
-	height: 100%;
-}
-
-#card.top, #card.cardpile {
-	width: 100%;
-	height: 100%;
+	width: 124px;
+	height: 180px;
 }
 
 #spoon {
-	width: 7.5%;
-	height: 100%;
+    width: 58px;
+    height: 273px;
 }
 
 .playerTable {
@@ -32,20 +20,27 @@
     border: solid #BABABA 1px;
 }
 
+.gameScene {
+    margin: 50px;
+    position: relative;
+    width: 1070px;
+    height: 700px;
+}
+
 .spoons {
 	text-align: center;
     border: solid black 1px;
-    width: 72%;
-    height: 39.3%;
+    width: 770px;
+    height: 275px;
     position: absolute;
-    top: 21.4%;
-    left: 14%;
+    top: 150px;
+    left: 150px;
 }
 
 .hand {
     border: solid black 1px;
-    width: 46.5%;
-    height: 26%;
+    width: 498px;
+    height: 182px;
     position: absolute;
     top: 475px;
     left: 150px;
@@ -53,8 +48,8 @@
 
 .topcard {
     border: solid black 1px;
-    width: 11.8%;
-    height: 26%;
+    width: 126px;
+    height: 182px;
     position: absolute;
     top: 475px;
     left: 660px;
@@ -62,8 +57,8 @@
 
 .pile {
     border: solid black 1px;
-    width: 11.8%;
-    height: 26%;
+    width: 126px;
+    height: 182px;
     position: absolute;
     top: 500px;
     left: 795px;
@@ -84,34 +79,34 @@
     border-color: #0000CC;
     position: absolute;
     top: 300px;
-    left: 0%;
+    left: 0px;
 }
 
 .u1 {
     border-color: #CC00CC;
     position: absolute;
     top: 175px;
-    left: 0%;
+    left: 0px;
 }
 
 .u2 {
     border-color: #00CC00;
     position: absolute;
-    top: 0%;
+    top: 0px;
     left: 360px;
 }
 
 .u3 {
     border-color: #CCCC00;
     position: absolute;
-    top: 0%;
+    top: 0px;
     left: 485px;
 }
 
 .u4 {
     border-color: #336666;
     position: absolute;
-    top: 0%;
+    top: 0px;
     left: 610px;
 }
 
@@ -119,12 +114,12 @@
     border-color: #CC0000;
     position: absolute;
     top: 300px;
-    right: 0%;
+    right: 0px;
 }
 
 .u6 {
     border-color: #663300;
     position: absolute;
     top: 175px;
-    right: 0%;
+    right: 0px;
 }

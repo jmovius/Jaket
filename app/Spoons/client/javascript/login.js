@@ -1,23 +1,25 @@
 var main = function () {
     "use strict";
 
-    var $btn_login = $("#btn_login");
+    var $username = $("#username").attr("placeholder", "Username"),
+        $password = $("#password").attr("placeholder", "Password"),
+        $btn_login = $("#btn_login");
 
     $btn_login.on("click", function () {
-        if($("#username").val() !== "" && $("#password").val() !== "") {
-            var hash = CryptoJS.SHA256($("#password").val()).toString();
+        if($username.val() !== "" && $password.val() !== "") {
+            var hash = CryptoJS.SHA256($password.val()).toString();
 
-            $.post("/login",{ username:$("#username").val(), password:hash }).done(function (response) {
+            $.post("/login",{ username:$username.val(), password:hash }).done(function (response) {
                 if(response.msg === "success") {
                     $(location).attr("href","/spoons");
                 } else {
                     document.getElementById("alert").innerHTML = response.msg;
                 }
-                $("#password").val("");
+                $password.val("");
             });
         } else {
             document.getElementById("alert").innerHTML = "Username/Password required.";
-            $("#password").val("");
+            $password.val("");
         }
     });
     
@@ -25,13 +27,13 @@ var main = function () {
         document.getElementById("alert").innerHTML = "";
     });
 
-    $("#username").on("keyup", function (e) {
+    $username.on("keyup", function (e) {
         if (e.keyCode === 13) {
-            $("#password").focus();
+            $password.focus();
         }
     });
 
-    $("#password").on("keyup", function (e) {
+    $password.on("keyup", function (e) {
         if (e.keyCode === 13) {
             $btn_login.click();
         }

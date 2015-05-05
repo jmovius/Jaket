@@ -16,7 +16,6 @@ h3 {
 }
 
 body .description {
-	padding-bottom: 2em;
 	width: 400px;
 }
 
@@ -52,7 +51,18 @@ header nav {
 	text-align: center;
 }
 
+.headerlogo {
+	margin: -15px;
+	height: 65px;
+}
+
+.rightimg {
+	float: right;
+	height: 150px;
+}
+
 .h1nav {
+	padding-left: 25px;
 	display: inline-block;
 	font-size: 2em;
 }

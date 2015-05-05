@@ -115,7 +115,7 @@ var main = function () {
 					// Get card index based on IMG's class
 					var index = this.className;
 					socket.emit("discard", index);
-					var imgsrc = $("#card.-1").attr("src");
+					var imgsrc = $("#card.top").attr("src");
 					$("#card." + index).attr("src", imgsrc);
 					$("div.topcard").empty();
 					topCardVisible = false;
@@ -129,7 +129,7 @@ var main = function () {
 	// Get the top card from the pile
 	socket.on("getTopCard", function (card){
 		var cardname = card.suit + card.value;
-		var $img = $("<img>").addClass("-1").attr({
+		var $img = $("<img>").addClass("top").attr({
 			src: "images/deck/" + cardname + ".png",
 			id: "card"
 		});
