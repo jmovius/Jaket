@@ -9,7 +9,7 @@ var main = function () {
 
             $.post("/login",{ username:$("#username").val(), password:hash }).done(function (response) {
                 if(response.msg === "success") {
-                    $(location).attr("href","/");
+                    $(location).attr("href","/default.html");
                 } else {
                     document.getElementById("alert").innerHTML = response.msg;
                 }

@@ -10,7 +10,7 @@ var main = function () {
             $.post("/register",{ username:$("#username").val(), password:hash }).done(function (response) {
                 if(response.msg === "success") {
                     document.getElementById("alert").innerHTML = response.msg;
-                    //$(location).attr("href","/"); // Will be a delayed redirect.
+                    $(location).attr("href","/"); // Will be a delayed redirect.
                 } else {
                     document.getElementById("alert").innerHTML = response.msg;
                 }

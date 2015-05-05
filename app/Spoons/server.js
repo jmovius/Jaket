@@ -72,8 +72,8 @@ var initDeck = function (deck) {
 // Array shuffle function. Used to shuffle deck of cards.
 // Source: http://jsfromhell.com/array/shuffle
 var shuffle = function (o) {
-    for(var j, x, i = o.length; i; j = Math.floor(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);
-    return o;
+	for(var j, x, i = o.length; i; j = Math.floor(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);
+	return o;
 };
 
 var baseDeck = initDeck(deckSchema); // Deck Initialized
@@ -81,6 +81,11 @@ var baseDeck = initDeck(deckSchema); // Deck Initialized
 // A new shuffled deck is created. The slice(0) ensures a clone of baseDeck so that baseDeck is not modified by the sort.
 //var shuffledDeck = shuffle(baseDeck.slice(0)); 
 
+//=============================================================================
+// General methods
+//=============================================================================
+
+// Return true if all 4 cards in the hand have the same value
 function fourOfKind(cards){
 	var card = cards[0],
 		value = card.value;
@@ -92,6 +97,7 @@ function fourOfKind(cards){
 	return true;
 }
 
+// Close the waiting room and prepare for a new game
 function closeRoom(){
 	// Send messages to all users in the room
 	Object.keys(rooms[openRoomID].users).forEach(function (uname, index, users){
@@ -107,7 +113,7 @@ function closeRoom(){
 	rooms[openRoomID] = {"users": {}, "spoons": 0, "timer": 0};
 }
 
-
+// Prepares the game by shuffling the deck and dealing out cards
 function prepGame(roomID){
 	var room = rooms[roomID],
 		users = room.users;
@@ -158,11 +164,13 @@ sessionSockets.on("connection", function (err, socket, session){
 	// If room is full now
 	var roomsize = Object.keys(rooms[openRoomID].users).length;
 	if (roomsize === MAX_PLAYERS){
+		// Close the room and start the game
 		closeRoom();
 	} else {
+		// If more than one player waiting in the room, reset the timer back to 30 seconds
 		if (roomsize > 1) {
 			waitTime = 30;
-		} else {
+		} else { // Only one user here so stop the timer
 			waitTime = 0;
 		}
 		// Send message to all users in the room
@@ -181,10 +189,16 @@ sessionSockets.on("connection", function (err, socket, session){
 		console.log(session.username + " disconnected with socket id: " + socket.id);
 		// Delete presence of the username being logged in
 		delete userToSocket[session.username];
-		// Get the room this user was in
-		var roomid = session.room;
-		// Get all users in this room
-		var users = rooms[roomid].users;
+		// Get the room this user was in and its players
+		var roomid = session.room,
+			room = rooms[roomid],
+			users = room.users;
+
+		// Check if currently in game (Tyler is currently working on this)
+		//if (rooms)
+
+
+
 		// Delete the user from the room
 		delete rooms[roomid].users[session.username];
 		// No more users in the room, so we can delete it
@@ -260,15 +274,11 @@ sessionSockets.on("connection", function (err, socket, session){
 			io.emit("removeSpoon", index, userid);
 			rooms[roomid].spoons--;
 			// If spoons is 0, send message to end game
+			// TODO HERE
 		} else {
 			// Otherwise, penalize the player
 			socket.emit("penalty");
 		}
-		
-		//io.emit("removeSpoon", index, thisUser);
-
-		
-		//socket.emit("penalty");
 	});
 
 
@@ -288,55 +298,65 @@ rdb.on("connect", function(){
 // AJAX request and responses
 //=============================================================================
 
+// 
 app.get("/", function (req, res) {
 	"use strict";
+	// TESTING -- Will not automatically throw a user already logged in to default.html in a new tab.
+	// I need this to connect with many users and test the game.
+	res.redirect("/login");
+	return;
 
 	console.log("isAuthorized: " + req.session.isAuthorized);
 
 	if(req.session.isAuthorized) {
-        res.sendFile(__dirname + "/client/default.html");
+		res.sendFile(__dirname + "/client/default.html");
 	} else {
-        res.redirect("/login");
+		res.redirect("/login");
 	}
 });
 
+// User requesting to register for an account; redirect to registration page
 app.get("/register", function (req, res) {
 	"use strict";
 
 	res.sendFile(__dirname + "/client/register.html");
 });
 
+// User submits their registration data
 app.post("/register", function (req, res){
 	"use strict";
 
 	console.log("Username: " + req.body.username.toLowerCase() + "\nPassword: " + req.body.password);
-
+	// Check if the username already exists in the database
 	rdb.exists(req.body.username.toLowerCase(), function (err, reply) {
 		if(err) {
 			console.log(err);
 			return res.json({ msg:"Server was unable to complete the registration. Please try again."})
 		}
-
-	    if (reply === 1) {
+		// Username exists
+		if (reply === 1) {
 			return res.json({ msg:"Username already exists." });
-	    } else {
-	    	rdb.hmset(req.body.username.toLowerCase(), {
-    			"password": req.body.password,
-    			"rank":"0",
-    			"gamesPlayed": "0"
+		} else {
+			rdb.hmset(req.body.username.toLowerCase(), {
+				"password": req.body.password,
+				"rank":"0",
+				"gamesPlayed": "0"
 			});
-	    	req.body.password;
-	    	return res.json({ msg:"success" })
-	    }
+			//req.body.password; <------------------------ don't think this is supposed to be here
+			//res.redirect("/login");
+			return res.json({ msg:"success" }) // We really should redirect back to home page
+		}
 	});
 });
 
+// Not sure if this is ever called
 app.get("/login", function (req, res) {
 	"use strict";
 
 	res.sendFile(__dirname + "/client/login.html");
 });
 
+// Don't have one of these yet
 app.get("/logout", function (req, res) {
 	"use strict";
 
@@ -344,28 +364,35 @@ app.get("/logout", function (req, res) {
 	res.sendFile(__dirname + "/client/login.html");
 });
 
-// User is checking to connect to server with username. Check if available username.
+// User requesting to login to their account
 app.post("/login", function (req, res){
 	"use strict";
 
 	var un = req.body.username.toLowerCase();
-
 	console.log("Username: " + un + "\nPassword: " + req.body.password);
+	// Get username from database
 	rdb.hgetall(un, function (err, user) {
 		if(err) {
 			console.log(err);
 			return res.json({ msg:"Server was unable to complete the login. Please try again." })
 		}
-
+		// Username exists
 		if (user !== null) {
+			// Check that password matches
 			if(user.password === req.body.password) {
-				console.log(user);
-				req.session.isAuthorized = true;
-				req.session.username = un;
-				req.session.rank = user.rank;
-				req.session.gamesPlayed = user.gamesPlayed;
+				// Checking if this user isn't already logged in
+				if (!userToSocket[un]){
+					console.log(user);
+					req.session.isAuthorized = true;
+					req.session.username = un;
+					req.session.rank = user.rank;
+					req.session.gamesPlayed = user.gamesPlayed;
+					
+					return res.json({ msg:"success" });
+				} else {
+					return res.json({ msg:"User is already logged in." });
+				}
 				
-				return res.json({ msg:"success" });
 			} else {
 				req.session.isAuthorized = false;
 				console.log("Incorrect Password - isAuthorized: " + req.session.isAuthorized);
