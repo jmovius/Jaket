@@ -112,6 +112,10 @@
 	overflow: hidden;
 }
 
+.emptyPlayer {
+    background: black;
+}
+
 .u0 {
     border-color: #0000CC;
     position: absolute;

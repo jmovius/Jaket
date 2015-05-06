@@ -22,6 +22,17 @@ var main = function () {
 	var inactiveTimer = 0;
 	var inactiveInterval;
 
+	// Adds a class to any user slot that is not occupied.
+	var setEmptyUsers = function () {
+		var i;
+
+		for(i = 0; i < 8; i++) {
+			if( !$.trim( $("div.u" + i).html() ).length ) {
+     			$("div.u" + i).addClass("emptyPlayer");
+			}
+		}
+	};
+
 //=============================================================================
 // Socket.IO
 //=============================================================================
@@ -52,6 +63,9 @@ var main = function () {
 				$(dom).text(users[i]);
 				playerPlacement++;
 			}
+			// Update UI to reflect missing users.
+			setEmptyUsers();
+
 			// Also set the username (which should be the last one on the list)
 			username = users[users.length - 1];
 		}
@@ -100,8 +114,14 @@ var main = function () {
 		}
 	})
 
-	socket.on("removePlayer", function (user){
-		// TODO
+	socket.on("removePlayer", function (username){
+		var i;
+
+		for(i = 0; i < 8; i++) {
+			if( $("div.u" + i).html() === username ) {
+     			$("div.u" + i).addClass("emptyPlayer");
+			}
+		}
 	});
 //--------------------------------------------
 // In game messages
