@@ -74,14 +74,12 @@ var main = function () {
 	// Get some time element from the server to display and countdown on the page
 	socket.on("time", function (time){
 		gameTimer = time;
+		stopGameTimer();
 		if (time > 0){
-			// Ensure that the current timer is stopped before starting a new one
-			stopGameTimer();
-			$("div.timer").text(time);
+			// Ensure that the current timer is stopped before starting a new one. If you DON'T stop the timer's setInterval, it will have two intervals running in parallel.
+			// If you say "let's just not put either of these here", then you are continuing the currently running interval, which may be ahead by a few milliseconds.
+			// Stopping and starting ensures that the interval will start at zero.
 			startGameTimer();
-		} else {
-			$("div.timer").text("");
-			stopGameTimer();
 		}
 	});
 
@@ -196,25 +194,38 @@ var main = function () {
 		console.log("PENALTY");
 	});
 
-	// Tells the player who won or lost that game (still needs work)
-	socket.on("gameresult", function (uname, index, gameover){
+	// Tells the player who won or lost that game
+	socket.on("gameresult", function (uname, gameover){
 		// If you are the loser
 		if (username === uname) {
-			// display lose message
-			// TEMPORARY FOR NOW
-			alert("You lose!");
-			// Delete cards
+			// Delete objects
 			$("div.hand").empty();
 			$("div.topcard").empty();
 			$("div.pile").empty();
 			$("div.spoons").empty();
+			// Message indicating the player lost
+			$("div.spoons").append("YOU LOSE!");
+			// Ask server to remove them from the room via their session
+			socket.emit("removeMeFromRoom");
 			// display button that will send user to open room
+			// TODO!
 		} else {
-			// display who lost
-			// TEMPORARY FOR NOW
-			alert(uname + " lost!")
-			// countdown timer until next round
-			if (!gameover){
+			$("div.spoons").empty();
+			// End of the game (no more rounds left)
+			console.log(gameover);
+			if (gameover){
+				$("div.hand").empty();
+				$("div.topcard").empty();
+				$("div.pile").empty();
+				// Message indicating you won
+				$("div.spoons").append("YOU WIN!");
+				stopGameTimer();
+				// display button that will send user to open room
+				// TODO!
+			} else {
+				// Message indicating who lost
+				$("div.spoons").append(uname + " lost!");
+				// countdown timer until next round
 				gameTimer = 8;
 				startGameTimer();
 			}
@@ -229,12 +240,13 @@ var main = function () {
 	// If there is a timer going on, decrease it and display on page
 	function startGameTimer() {
 		if (gameInterval) return;
+		$("div.timer").text(gameTimer);
+
 		gameInterval = setInterval(function (){
 			if (gameTimer > 0){
 				gameTimer--;
 				$("div.timer").text(gameTimer);
 			} else {
-				$("div.timer").text("");
 				stopGameTimer(gameInterval);
 			}
 		}, 1000);
@@ -242,6 +254,7 @@ var main = function () {
 
 	function stopGameTimer() {
 		clearInterval(gameInterval);
+		$("div.timer").text("");
 		gameInterval = null;
 	}
 
