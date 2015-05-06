@@ -31,6 +31,7 @@ var main = function () {
 	socket.on("usersInRoom", function (users){
 		// In the waiting room
 		if (scene === WAITING) {
+			// Draw names to a table
 			$("td.index").empty();
 			$("td.user").empty();
 			users.forEach(function (e, i, a){
@@ -41,15 +42,26 @@ var main = function () {
 			});
 		// Playing the game
 		} else if (scene === GAME) {
+			// Draw all the users' names around the screen in the DIV boxes
 			var playerPlacement = 0,
 				i;
+
+			for (i = 0; i < users.length - 1; i++){
+				if (!users[i]) continue;
+				var dom  = "div.u" + (playerPlacement);
+				$(dom).text(users[i]);
+				playerPlacement++;
+			}
+			// Also set the username (which should be the last one on the list)
+			username = users[users.length - 1];
+				/*
 			for (i = (playerIndex + 1) % 8; i != playerIndex; i = (i + 1) % 8){
 				if (!users[i]) continue;
 				var dom  = "div.u" + (playerPlacement);
 				$(dom).text(users[i]);
 				console.log(dom, users[i]);
 				playerPlacement++;
-			}
+			}*/
 
 		}
 	});
@@ -74,15 +86,17 @@ var main = function () {
 	});
 
 	// Notify the client that the game is starting. Transition to the new scene
-	socket.on("gameStart", function (spoons){
+	socket.on("gameStart", function (){
 		scene = GAME;
-		//gameTimer = 5;
-		//stopGameTimer();
-		//startGameTimer();
 		$("div.timer").text("");
 		$("div.waitingRoom").hide();
 		$("div.gameScene").show();
+		
+	});
+
+	socket.on("numOfSpoons", function (spoons){
 		// Draw spoons
+		$("div.spoons").empty();
 		for (var i = 0; i < spoons; i++){
 			var $img = $("<img>").addClass(i.toString()).attr({
 				src: "images/spoon.png",
@@ -95,12 +109,16 @@ var main = function () {
 			});
 			$("div.spoons").append($img);
 		}
-	});
+	})
 //--------------------------------------------
 // In game messages
 //--------------------------------------------
 	// Get the hand
 	socket.on("playerHand", function (cards){
+		$("div.hand").empty();
+		$("div.topcard").empty();
+		$("div.pile").empty();
+
 		cards.forEach(function (card, index){
 			var cardname = card.suit + card.value;
 			var $img = $("<img>").addClass(index.toString()).attr({
@@ -151,9 +169,8 @@ var main = function () {
 
 	// If the pile is empty, this message will alert user that pile has a card in it now
 	socket.on("updatePile", function (isEmpty){
-		if (isEmpty){
-			$("div.pile").empty();
-		}else{
+		$("div.pile").empty();
+		if (!isEmpty){
 			var $img = $("<img>").addClass("cardpile").attr({
 				src: "images/deck/cardback.png",
 				id: "card"
@@ -169,7 +186,9 @@ var main = function () {
 
 	// Tells user that the spoon at "index" was taken by "user"
 	socket.on("removeSpoon", function (index, user){
-		$("#spoon." + index).remove();
+		// Remove the spoon (replaced with empty image) and unbind the click event attached to it
+		$("#spoon." + index).unbind("click");
+		$("#spoon." + index).attr("src", "images/emptySpoon.png");
 	});
 
 	// If tried going for a spoon illegally, get penalized
@@ -177,13 +196,23 @@ var main = function () {
 		console.log("PENALTY");
 	});
 
-	socket.on("gameresult", function (uname, gameover){
+	// Tells the player who won or lost that game (still needs work)
+	socket.on("gameresult", function (uname, index, gameover){
 		// If you are the loser
 		if (username === uname) {
 			// display lose message
+			// TEMPORARY FOR NOW
+			alert("You lose!");
+			// Delete cards
+			$("div.hand").empty();
+			$("div.topcard").empty();
+			$("div.pile").empty();
+			$("div.spoons").empty();
 			// display button that will send user to open room
 		} else {
 			// display who lost
+			// TEMPORARY FOR NOW
+			alert(uname + " lost!")
 			// countdown timer until next round
 			if (!gameover){
 				gameTimer = 8;
