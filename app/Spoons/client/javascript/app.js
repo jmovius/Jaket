@@ -54,15 +54,6 @@ var main = function () {
 			}
 			// Also set the username (which should be the last one on the list)
 			username = users[users.length - 1];
-				/*
-			for (i = (playerIndex + 1) % 8; i != playerIndex; i = (i + 1) % 8){
-				if (!users[i]) continue;
-				var dom  = "div.u" + (playerPlacement);
-				$(dom).text(users[i]);
-				console.log(dom, users[i]);
-				playerPlacement++;
-			}*/
-
 		}
 	});
 

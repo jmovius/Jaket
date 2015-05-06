@@ -294,7 +294,8 @@ sessionSockets.on("connection", function (err, socket, session){
 
 	// Client disconnects
 	socket.on("disconnect", function(){
-		// If the user didn't input a name, don't process any further
+		// If the user didn't input a name, don't process any further 
+		// (pretty sure this is never reached, now that we have a legit login system)
 		if (!session.username) return;
 
 		console.log(session.username + " disconnected with socket id: " + socket.id);
@@ -312,16 +313,15 @@ sessionSockets.on("connection", function (err, socket, session){
 			usernames = Object.keys(users),
 			user = users[session.username];
 
-		// No more users in the room, so we can delete it (this is the last person leaving the room, hence the 1 and not 0)
-		if (usernames.length === 1){
-			delete rooms[roomid];
-			session.room = null;
-			return;
-		}
 		// Check if playing the game (not waiting to start a game)
 		if (roomid !== openRoomID){
-			// Check if in the setup phase of the game (timer is counting down)
-			if (room.timerRunning){
+			// The last user of the room is leaving
+			if (usernames.length === 1){
+				// We can delete the room and unassign the room to the user
+				delete rooms[roomid];
+				session.room = null;
+				return;
+			} else if (room.timerRunning){ // Check if in the setup phase of the game (timer is counting down)
 				// If the player was the dealer (first person in users array)
 				if (usernames[0] === session.username){
 					// Their hand and pile will shift to the next user
@@ -340,7 +340,6 @@ sessionSockets.on("connection", function (err, socket, session){
 				userToSocket[usernames[nextseatid]].emit("updatePile", false);
 			}
 			// Delete the user from the room
-			console.log("Remove the user from the room")
 			delete rooms[roomid].users[session.username];
 			session.room = null;
 			// Remove a spoon from the game
@@ -472,8 +471,9 @@ app.get("/", function (req, res) {
 
 // If a user has logged in (isAuthorized == true), then they are directed to the maing page;
 // otherwise, the user is directed to the login page.
+// Also, this user may not open another tab under themself so they will be redirected to the login page.
 app.get("/spoons", function (req, res) {
-	if(req.session.isAuthorized) {
+	if(req.session.isAuthorized && !userToSocket[req.session.username]) {
 		res.sendFile(__dirname + "/client/default.html");
 	} else {
 		res.redirect("/login");
@@ -485,6 +485,7 @@ app.get("/spoons", function (req, res) {
 app.get("/register", function (req, res) {
 	"use strict";
 
+	req.session.destroy();
 	res.sendFile(__dirname + "/client/register.html");
 	return;
 });
@@ -518,6 +519,7 @@ app.post("/register", function (req, res){
 app.get("/login", function (req, res) {
 	"use strict";
 
+	req.session.destroy();
 	res.sendFile(__dirname + "/client/login.html");
 	return;
 });
