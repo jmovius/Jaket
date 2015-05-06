@@ -119,6 +119,7 @@ var main = function () {
 
 		for(i = 0; i < 8; i++) {
 			if( $("div.u" + i).html() === username ) {
+				$("div.u" + i).empty();
      			$("div.u" + i).addClass("emptyPlayer");
 			}
 		}
