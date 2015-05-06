@@ -42,7 +42,7 @@ body .form-group {
 /* Header */
 header {
 	background: #2F3540;
-	overflow: auto;
+	overflow: hidden;
 	border-bottom: 1px solid;
 	border-color: #D3D3D3;
 }
