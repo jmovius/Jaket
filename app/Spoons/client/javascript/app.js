@@ -23,15 +23,42 @@ var main = function () {
 	var inactiveInterval;
 
 	// Adds a class to any user slot that is not occupied.
-	var setEmptyUsers = function () {
+	var setEmptyUsers = function (initPage) {
 		var i;
 
+		// Set default value.
+		initPage = (typeof initPage !== "undefined") ? initPage : false;
+
 		for(i = 0; i < 8; i++) {
+			if(initPage) {
+				$("div.u" + i).empty()
+			}
 			if( !$.trim( $("div.u" + i).html() ).length ) {
-     			$("div.u" + i).addClass("emptyPlayer");
+				$("div.u" + i).addClass("emptyPlayer");
+			} else {
+				$("div.u" + i).removeClass("emptyPlayer");
 			}
 		}
 	};
+
+	var initPage = function () {
+		$("div.waitingRoom").show();
+		$("div.gameScene").hide();
+		$("div.spoons").empty();
+		$("div.hand").empty();
+		$("div.topcard").empty();
+		$("div.pile").empty();
+		$("div.timer").empty();
+		$("td.index").empty();
+		$("td.user").empty();
+		setEmptyUsers(true);
+	};
+
+	$("#joinLobby").click(function () {
+		socket.emit("leaveGame");
+		initPage();
+		socket.emit("joinLobby");
+	});
 
 //=============================================================================
 // Socket.IO

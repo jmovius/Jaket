@@ -245,27 +245,9 @@ function nextRound(roomid){
 	prepGame(roomid);
 }
 
-//=============================================================================
-// Socket.IO
-//=============================================================================
-
-// Server receives connection from a client
-sessionSockets.on("connection", function (err, socket, session){
-	//--[ Note ]--------------------------------------------
-	// Create data for session: session.<var> = <obj>
-	// Then save the data for the session: session.save()
-	//------------------------------------------------------
-
-	console.log("some client connected; username: " + session.username);
-
-	// ***** SOCKET.ON("USERNAME", ...) ***** BEGIN
-	// Client, with accepted username, is looking for a room to join
-	console.log("user " + session.username + " connected.");
-	// Associate username with socket object
-	userToSocket[session.username] = socket;
+var joinLobby = function (session) {
 	// Save user session by initalizing data
 	session.room = openRoomID;
-	session.uid = socket.id;
 	session.save();
 
 	var userData = {hand: [], pile: [], hasSpoon: false};
@@ -290,6 +272,115 @@ sessionSockets.on("connection", function (err, socket, session){
 			userToSocket[user].emit("time", waitTime);
 		});
 	}
+};
+
+// Socket function to handle leaving a game lobby (waiting and active game). Reduces reusing code.
+var leaveLobby = function (session, roomid, room, users, usernames, user) {
+	// Delete the user from the room
+	delete rooms[roomid].users[session.username];
+	session.room = null;
+	// Send message to all users in the room about disconnect
+	usernames = Object.keys(users); // Redo since we deleted a user
+	usernames.forEach(function (uname, index, players){
+		userToSocket[uname].emit("usersInRoom", players);
+		// If only one user left, remove the timer
+		if (players.length === 1)
+			userToSocket[uname].emit("time", 0);
+	});
+};
+var leaveActiveGame = function (session, roomid, room, users, usernames, user) {
+	// The last user of the room is leaving
+	if (usernames.length === 1){
+		// We can delete the room and unassign the room to the user
+		delete rooms[roomid];
+		session.room = null;
+		return;
+	} else if (room.timerRunning){ // Check if in the setup phase of the game (timer is counting down)
+		// If the player was the dealer (first person in users array)
+		if (usernames[0] === session.username){
+			// Their hand and pile will shift to the next user
+			users[usernames[1]].pile = users[usernames[1]].pile.concat(user.hand, user.pile);
+		} else { 
+			// The player's hand will be sent to the dealer
+			users[usernames[0]].pile = users[usernames[0]].pile.concat(user.hand);
+		}
+	} else { // Currently IN game
+		// Put player's pile and hand into next person's pile
+		var seatid = usernames.indexOf(session.username),
+			nextseatid = (seatid + 1) % usernames.length,
+			nextplayer = users[usernames[nextseatid]];
+		nextplayer.pile = nextplayer.pile.concat(user.hand, user.pile);
+		// The player should be aware that their pile is loaded now
+		userToSocket[usernames[nextseatid]].emit("updatePile", false);
+	}
+	// Tell clients that this user disconnected
+	for (var i = 0; i < usernames.length; i++){
+		// Can't tell the removed user that they disconnected for obvious reasons
+		if (usernames[i] === session.username)
+			continue;
+		userToSocket[usernames[i]].emit("removePlayer", session.username);
+	}
+	// Delete the user from the room
+	delete rooms[roomid].users[session.username];
+	session.room = null;
+	// Remove a spoon from the game
+	removeSomeSpoon(roomid);
+	// If doing this causes the game to end, end the game
+	if (numberOfSpoons(roomid) === 0) {
+		gameover(roomid);
+	}
+};
+// NOTE: isDisconnect defaults to false; however, if true, it means the user is currently in a lobby
+//		 and they have left the "registered users only" section of the website and their information
+//		 is handled accordingly. If the user is not disconnecting (clicking the "Join Lobby" button),
+//		 then no action should be taken.
+var leaveGame = function (session) {
+	// If not associated with a room (perhaps lost a game and is closing the window)
+	if (session.room === null){
+		// No need to do anything (completely harmless user)
+		return;
+	}
+	// Get the room this user was in and its players
+	var roomid = session.room,
+		room = rooms[roomid],
+		users = room.users,
+		usernames = Object.keys(users),
+		user = users[session.username];
+
+	// Check if player is in the waiting room.
+	if (roomid === openRoomID){
+		leaveLobby(session, roomid, room, users, usernames, user);
+	} else { // Player is playing the game.
+		leaveActiveGame(session, roomid, room, users, usernames, user);
+	}
+};
+
+//=============================================================================
+// Socket.IO
+//=============================================================================
+
+// Server receives connection from a client
+sessionSockets.on("connection", function (err, socket, session){
+	//--[ Note ]--------------------------------------------
+	// Create data for session: session.<var> = <obj>
+	// Then save the data for the session: session.save()
+	//------------------------------------------------------
+
+	console.log("some client connected; username: " + session.username);
+
+	// ***** SOCKET.ON("USERNAME", ...) ***** BEGIN
+	// Client, with accepted username, is looking for a room to join
+	console.log("user " + session.username + " connected.");
+	// Associate username with socket object
+	userToSocket[session.username] = socket;
+
+	// Save socket ID to the session.uid.
+	session.uid = socket.id;
+	session.save();
+
+	// Joins an active lobby.
+	joinLobby(session);
+
 	// ***** SOCKET.ON("USERNAME", ...) ***** END
 
 	// Client disconnects
@@ -301,79 +392,29 @@ sessionSockets.on("connection", function (err, socket, session){
 		console.log(session.username + " disconnected with socket id: " + socket.id);
 		// Delete presence of the username being logged in
 		delete userToSocket[session.username];
-		// If not associated with a room (perhaps lost a game and is closing the window)
-		if (session.room === null){
-			// No need to do anything (completely harmless user)
-			return;
-		}
-		// Get the room this user was in and its players
-		var roomid = session.room,
-			room = rooms[roomid],
-			users = room.users,
-			usernames = Object.keys(users),
-			user = users[session.username];
-
-		// Check if playing the game (not waiting to start a game)
-		if (roomid !== openRoomID){
-			// The last user of the room is leaving
-			if (usernames.length === 1){
-				// We can delete the room and unassign the room to the user
-				delete rooms[roomid];
-				session.room = null;
-				return;
-			} else if (room.timerRunning){ // Check if in the setup phase of the game (timer is counting down)
-				// If the player was the dealer (first person in users array)
-				if (usernames[0] === session.username){
-					// Their hand and pile will shift to the next user
-					users[usernames[1]].pile = users[usernames[1]].pile.concat(user.hand, user.pile);
-				} else { 
-					// The player's hand will be sent to the dealer
-					users[usernames[0]].pile = users[usernames[0]].pile.concat(user.hand);
-				}
-			} else { // Currently IN game
-				// Put player's pile and hand into next person's pile
-				var seatid = usernames.indexOf(session.username),
-					nextseatid = (seatid + 1) % usernames.length,
-					nextplayer = users[usernames[nextseatid]];
-				nextplayer.pile = nextplayer.pile.concat(user.hand, user.pile);
-				// The player should be aware that their pile is loaded now
-				userToSocket[usernames[nextseatid]].emit("updatePile", false);
-			}
-			// Tell clients that this user disconnected
-			for (var i = 0; i < usernames.length; i++){
-				// Can't tell the removed user that they disconnected for obvious reasons
-				if (usernames[i] === session.username)
-					continue;
-				userToSocket[usernames[i]].emit("removePlayer", session.username);
-			}
-			// Delete the user from the room
-			delete rooms[roomid].users[session.username];
-			session.room = null;
-			// Remove a spoon from the game
-			removeSomeSpoon(roomid);
-			// If doing this causes the game to end, end the game
-			if (numberOfSpoons(roomid) === 0) {
-				gameover(roomid);
-			}
-		} else { // Currently in waiting room
-			// Delete the user from the room
-			delete rooms[roomid].users[session.username];
-			session.room = null;
-			// Send message to all users in the room about disconnect
-			usernames = Object.keys(users); // Redo since we deleted a user
-			usernames.forEach(function (uname, index, players){
-				userToSocket[uname].emit("usersInRoom", players);
-				// If only one user left, remove the timer
-				if (players.length === 1)
-					userToSocket[uname].emit("time", 0);
-			});
-		}
+		// Call function to handle logic for leaving the game.
+		leaveGame(session);
 	});
 
 	// Because for some reason socketSessions.getSession isn't working, I made this.
 	// When the user loses, they send this request to remove themself from the room via their session
 	socket.on("removeMeFromRoom", function() {
 		session.room = null;
+	});
+
+	socket.on("leaveGame", function () {
+		// If the user is still connected to an active game in an active game.
+		if(session.room !== openRoomID || session.room !== null) {
+			leaveGame(session);
+		}
+	});
+
+	socket.on("joinLobby", function () {
+		// If the user is not already in a lobby.
+		if(session.room !== openRoomID) {
+			// Connect to an open lobby.
+			joinLobby(session);
+		}
 	});
 
 //--------------------------------------------
