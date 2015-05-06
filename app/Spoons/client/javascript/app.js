@@ -99,6 +99,10 @@ var main = function () {
 			$("div.spoons").append($img);
 		}
 	})
+
+	socket.on("removePlayer", function (user){
+		// TODO
+	});
 //--------------------------------------------
 // In game messages
 //--------------------------------------------

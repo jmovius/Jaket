@@ -339,6 +339,13 @@ sessionSockets.on("connection", function (err, socket, session){
 				// The player should be aware that their pile is loaded now
 				userToSocket[usernames[nextseatid]].emit("updatePile", false);
 			}
+			// Tell clients that this user disconnected
+			for (var i = 0; i < usernames.length; i++){
+				// Can't tell the removed user that they disconnected for obvious reasons
+				if (usernames[i] === session.username)
+					continue;
+				userToSocket[usernames[i]].emit("removePlayer", session.username);
+			}
 			// Delete the user from the room
 			delete rooms[roomid].users[session.username];
 			session.room = null;
