@@ -1,8 +1,11 @@
+// This will disable the penalty and inactivity timers
+var DISABLE_TIMERS = false;
+
 var main = function () {
 	"use strict";
 
 	var username;
-	var playerIndex = 0;
+	var hasSpoon = false;
 	var topCardVisible = false;
 	var inactiveCounter = 0; // Counts how many times in a row the game catches the player not doing anything. Too many and the user is kicked.
 	var socket = io();
@@ -41,7 +44,12 @@ var main = function () {
 		}
 	};
 
+	// Refreshes the page back to its original state
 	var initPage = function () {
+		stopInactiveTimer();
+		stopGameTimer();
+		stopPenaltyTimer();
+		scene = WAITING;
 		$("div.waitingRoom").show();
 		$("div.gameScene").hide();
 		$("div.spoons").empty();
@@ -54,7 +62,11 @@ var main = function () {
 		setEmptyUsers(true);
 	};
 
+	// User clicks the top link to join a new game; only works if not in one already
 	$("#joinLobby").click(function () {
+		// Ignore if in a waiting room
+		if (scene === WAITING)
+			return;
 		socket.emit("leaveGame");
 		initPage();
 		socket.emit("joinLobby");
@@ -98,11 +110,6 @@ var main = function () {
 		}
 	});
 
-	// Get this client's index in the room--the equivalence to "what seat are you sitting in"
-	socket.on("playerIndex", function (index){
-		playerIndex = index;
-	});
-
 	// Get some time element from the server to display and countdown on the page
 	socket.on("time", function (time){
 		gameTimer = time;
@@ -112,6 +119,10 @@ var main = function () {
 			// If you say "let's just not put either of these here", then you are continuing the currently running interval, which may be ahead by a few milliseconds.
 			// Stopping and starting ensures that the interval will start at zero.
 			startGameTimer();
+		} else if (scene === GAME){ // If in the game
+			// Start inactivity timer if necessary
+			if ($("img.cardpile").length)
+				restartInactiveTimer();
 		}
 	});
 
@@ -124,41 +135,12 @@ var main = function () {
 		
 	});
 
-	socket.on("numOfSpoons", function (spoons){
-		// Draw spoons
-		$("div.spoons").empty();
-		for (var i = 0; i < spoons; i++){
-			var $img = $("<img>").addClass(i.toString()).attr({
-				src: "images/spoon.png",
-				id: "spoon"
-			});
-			// Clicking the spoon (only allowed if game is actually running and not penalized). Sends the spoon's index.
-			$img.click(function(){
-				if (gameTimer === 0 && penaltyTimer === 0)
-					socket.emit("getSpoon", this.className);
-			});
-			$("div.spoons").append($img);
-		}
-	})
-
-	socket.on("removePlayer", function (username){
-		var i;
-
-		for(i = 0; i < 8; i++) {
-			if( $("div.u" + i).html() === username ) {
-				$("div.u" + i).empty();
-     			$("div.u" + i).addClass("emptyPlayer");
-			}
-		}
-	});
-//--------------------------------------------
-// In game messages
-//--------------------------------------------
 	// Get the hand
 	socket.on("playerHand", function (cards){
 		$("div.hand").empty();
 		$("div.topcard").empty();
 		$("div.pile").empty();
+		hasSpoon = false;
 
 		cards.forEach(function (card, index){
 			var cardname = card.suit + card.value;
@@ -171,6 +153,8 @@ var main = function () {
 			$img.click(function(){
 				// Top card is showing
 				if (topCardVisible && gameTimer === 0) {
+					// Restart inactivity
+					restartInactiveTimer();
 					// Get card index based on IMG's class
 					var index = this.className;
 					socket.emit("discard", index);
@@ -178,12 +162,62 @@ var main = function () {
 					$("#card." + index).attr("src", imgsrc);
 					$("div.topcard").empty();
 					topCardVisible = false;
+					// If no more cards to grab from the pile
+					if ($("img.cardpile").length === 0)
+						stopInactiveTimer();
 				}
 			});
 			// Append image to DIV
 			$("div.hand").append($img);
 		});
 	});
+
+	// Number of spoons on the table to draw (also assign the click event for them)
+	socket.on("numOfSpoons", function (spoons){
+		// Draw spoons
+		$("div.spoons").empty();
+		for (var i = 0; i < spoons; i++){
+			var $img = $("<img>").addClass(i.toString()).attr({
+				src: "images/spoon.png",
+				id: "spoon"
+			});
+			// Clicking the spoon (only allowed if game is actually running and not penalized). Sends the spoon's index.
+			$img.click(function(){
+				if (gameTimer === 0 && penaltyTimer === 0 && !hasSpoon)
+					socket.emit("getSpoon", this.className);
+			});
+			$("div.spoons").append($img);
+		}
+	});
+
+	// Remove the player from the room and darken the DIV object
+	socket.on("removePlayer", function (username){
+		var i;
+
+		for(i = 0; i < 8; i++) {
+			if( $("div.u" + i).html() === username ) {
+				$("div.u" + i).empty();
+				$("div.u" + i).addClass("emptyPlayer");
+			}
+		}
+		// Create a notification
+		var n = noty({
+			text: username + " left the game.",
+			layout: "center",
+			type: "warning",
+			theme: "relax",
+			animation: {
+				open: "animated fadeIn",
+				close: "animated fadeOut",
+				speed: 500
+			},
+			timeout: 3000,
+			killer: true
+		});
+	});
+//--------------------------------------------
+// In game messages
+//--------------------------------------------
 
 	// Get the top card from the pile
 	socket.on("getTopCard", function (card){
@@ -197,11 +231,16 @@ var main = function () {
 		$img.click(function(){
 			// Top card is showing
 			if (topCardVisible && gameTimer === 0) {
+				// Restart inactivity
+				restartInactiveTimer();
 				// Get card index based on IMG's class
 				var index = this.className;
 				socket.emit("discard", index);
 				$("div.topcard").empty();
 				topCardVisible = false;
+				// If no more cards to grab from the pile
+				if ($("img.cardpile").length === 0)
+					stopInactiveTimer();
 			}
 		});
 		// Append image to DIV
@@ -212,6 +251,10 @@ var main = function () {
 	socket.on("updatePile", function (isEmpty){
 		$("div.pile").empty();
 		if (!isEmpty){
+			// The user can do something, but only restart if the user doesn't have the timer running now
+			if (!inactiveInterval)
+				restartInactiveTimer();
+			// Draw the card back
 			var $img = $("<img>").addClass("cardpile").attr({
 				src: "images/deck/cardback.png",
 				id: "card"
@@ -222,6 +265,8 @@ var main = function () {
 					socket.emit("reqTopCard");
 			});
 			$("div.pile").append($img);
+		} else if (!topCardVisible){ // The pile is empty but no top card is showing, stop the inactive timer
+			stopInactiveTimer();
 		}
 	});
 
@@ -230,15 +275,24 @@ var main = function () {
 		// Remove the spoon (replaced with empty image) and unbind the click event attached to it
 		$("#spoon." + index).unbind("click");
 		$("#spoon." + index).attr("src", "images/emptySpoon.png");
+		// This player was the one who got the spoon
+		if (username === user){
+			hasSpoon = true;
+			// Turn off inactivity timers
+			stopInactiveTimer();
+		}
 	});
 
 	// If tried going for a spoon illegally, get penalized
 	socket.on("penalty", function (){
-		console.log("PENALTY");
+		restartPenaltyTimer();
 	});
 
 	// Tells the player who won or lost that game
 	socket.on("gameresult", function (uname, gameover){
+		// Turn off timers
+		stopInactiveTimer();
+		stopPenaltyTimer();
 		// If you are the loser
 		if (username === uname) {
 			// Delete objects
@@ -275,7 +329,6 @@ var main = function () {
 		}
 	});
 
-
 //=============================================================================
 // Interval functions
 //=============================================================================
@@ -284,12 +337,10 @@ var main = function () {
 	function startGameTimer() {
 		if (gameInterval) return;
 		$("div.timer").text(gameTimer);
-
 		gameInterval = setInterval(function (){
-			if (gameTimer > 0){
-				gameTimer--;
-				$("div.timer").text(gameTimer);
-			} else {
+			gameTimer--;
+			$("div.timer").text(gameTimer);
+			if (gameTimer <= 0){
 				stopGameTimer(gameInterval);
 			}
 		}, 1000);
@@ -302,35 +353,94 @@ var main = function () {
 	}
 
 	// Inactivity timer
-	function startInactiveTimer() {
-		if (inactiveInterval) return;
+	function restartInactiveTimer() {
+		// Do nothing if the player already has a spoon
+		if (hasSpoon || DISABLE_TIMERS)
+			return;
+		// Clear the last timer
+		console.log("Inactivity timer restarted");
+		clearInterval(inactiveInterval);
+		inactiveTimer = 0;
+
 		inactiveInterval = setInterval(function (){
-			if (inactiveTimer > 0){
-				inactiveTimer--;
-			} else {
-				stopInactiveTimer(inactiveInterval);
+			inactiveTimer++;
+			// Waited too long, penalize the player
+			if (inactiveTimer % 10 === 0){
+				console.log("You were inactive for too long! PENALTY");
+				// Waited way too long, kick them!
+				if (inactiveTimer >= 30){
+					// Create a notification
+					var n = noty({
+						text: "You were kicked from the game for being inactive!",
+						layout: "center",
+						type: "error",
+						theme: "relax",
+						animation: {
+							open: "animated fadeIn",
+							close: "animated fadeOut",
+							speed: 500
+						},
+						timeout: 10000,
+						killer: true
+					});
+					socket.emit("leaveGame");
+					stopInactiveTimer();
+					// Delete objects
+					$("div.hand").empty();
+					$("div.topcard").empty();
+					$("div.pile").empty();
+					$("div.spoons").empty();
+
+					stopInactiveTimer();
+				} else {
+					// Penalty timer
+					restartPenaltyTimer();
+					// Make the server auto perform a discard by sending the top card to the next player
+					socket.emit("discard", "top");
+					$("div.topcard").empty();
+					topCardVisible = false;
+				}
 			}
 		}, 1000);
 	}
 
-	function stopInactiveTimer() {
+	function stopInactiveTimer(){
+		inactiveTimer = 0;
+		console.log("Inactive timer stopped!");
 		clearInterval(inactiveInterval);
 		inactiveInterval = null;
 	}
 
 	// Penalty timer
-	function startPenaltyTimer() {
-		if (penaltyInterval) return;
+	function restartPenaltyTimer() {
+		if (DISABLE_TIMERS) return;
+		// Create a notification
+		var n = noty({
+			text: "Cannot click spoons for 5 seconds!",
+			layout: "center",
+			type: "warning",
+			theme: "relax",
+			animation: {
+				open: "animated fadeIn",
+				close: "animated fadeOut",
+				speed: 500 
+			},
+			timeout: 5000,
+			killer: true
+		});
+		clearInterval(penaltyInterval);
+		penaltyTimer = 5;
 		penaltyInterval = setInterval(function (){
-			if (penaltyTimer > 0){
-				penaltyTimer--;
-			} else {
-				stopPenaltyTimer(penaltyInterval);
+			penaltyTimer--;
+			if (penaltyTimer <= 0){
+				stopPenaltyTimer();
 			}
 		}, 1000);
 	}
 
 	function stopPenaltyTimer() {
+		// Create a notification
+		penaltyTimer = 0;
 		clearInterval(penaltyInterval);
 		penaltyInterval = null;
 	}
@@ -341,7 +451,6 @@ var main = function () {
 //=============================================================================
 
 // Initially hiding these DIV elements as they are for different scenes
-//$("div.waitingRoom").hide();
 $("div.gameScene").hide();
 
 $(document).ready(main);

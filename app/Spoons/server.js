@@ -93,13 +93,16 @@ function newOnesArray(size){
 // Removes the first spoon available in the room. Needed for when a user disconnects from the game.
 function removeSomeSpoon(roomid){
 	var room = rooms[roomid],
+		usernames = Object.keys(room.users),
 		spoons = room.spoons;
 	for (var i = 0; i < spoons.length; i++){
 		// There is a spoon here
 		if (spoons[i]){
 			spoons[i] = 0;
 			// Tell the users this spoon is gone now
-			io.emit("removeSpoon", i, null);
+			for (var j = 0; j < usernames.length; j++){
+				userToSocket[usernames[j]].emit("removeSpoon", i, null);
+			}
 			break;
 		}
 	}
@@ -138,9 +141,8 @@ function closeRoom(){
 		usernames = Object.keys(users),
 		user,
 		username;
-	// Set the number of spoons in the room
-	room.spoons = newOnesArray(usernames.length - 1);
-
+	
+	// Tell the users the game is starting and give them the final list of all players
 	for (var i = 0; i < usernames.length; i++){
 		username = usernames[0];
 		usernames.push(usernames.shift());
@@ -156,12 +158,13 @@ function closeRoom(){
 
 // Prepares the game by shuffling the deck and dealing out cards
 function prepGame(roomid){
-	console.log("Prep game!");
 	var room = rooms[roomid],
 		users = room.users,
 		usernames = Object.keys(users);
+	// Shuffle deck of cards
 	var deck = shuffle(baseDeck.slice(0));
-
+	// Set the number of spoons in the room
+	room.spoons = newOnesArray(usernames.length - 1);
 	// Deal out the players' hands and resets variables
 	for (var i = 0; i < usernames.length; i++){
 		var name = usernames[i],
@@ -228,12 +231,19 @@ function gameover(roomid){
 // After having set a timer on for the room, turn it off with this method called in a setTimeout
 // This is needed to start the game. Alert the users that the game has started too.
 function turnOffTimer(roomid){
-	rooms[roomid].timerRunning = false;
+	var room = rooms[roomid],
+		users = room.users,
+		usernames = Object.keys(users);
+	room.timerRunning = false;
+	// Tell the users that the game started, even if their timers are still going down
+	for (var i = 0; i < usernames.length; i++){
+		userToSocket[usernames[i]].emit("time", 0);
+	}
+
 }
 
 // The brief pause between each round. Preps for the next round
 function nextRound(roomid){
-	console.log("Next round!");
 	var room = rooms[roomid],
 		users = room.users,
 		usernames = Object.keys(users);
@@ -245,13 +255,19 @@ function nextRound(roomid){
 	prepGame(roomid);
 }
 
+
+//=============================================================================
+// Functions called by Socket.IO
+// Mostly things related to joining and leaving rooms
+//=============================================================================
+
+// User is joining the waiting room
 var joinLobby = function (session) {
 	// Save user session by initalizing data
 	session.room = openRoomID;
 	session.save();
-
+	// The user data to be saved in the room
 	var userData = {hand: [], pile: [], hasSpoon: false};
-
 	// Add user session to the open room
 	rooms[openRoomID].users[session.username] = userData;
 	// If room is full now
@@ -365,23 +381,18 @@ sessionSockets.on("connection", function (err, socket, session){
 	// Create data for session: session.<var> = <obj>
 	// Then save the data for the session: session.save()
 	//------------------------------------------------------
-
 	console.log("some client connected; username: " + session.username);
-
-	// ***** SOCKET.ON("USERNAME", ...) ***** BEGIN
 	// Client, with accepted username, is looking for a room to join
 	console.log("user " + session.username + " connected.");
 	// Associate username with socket object
 	userToSocket[session.username] = socket;
-
 	// Save socket ID to the session.uid.
 	session.uid = socket.id;
 	session.save();
-
 	// Joins an active lobby.
 	joinLobby(session);
 
-	// ***** SOCKET.ON("USERNAME", ...) ***** END
+
 
 	// Client disconnects
 	socket.on("disconnect", function(){
@@ -396,19 +407,25 @@ sessionSockets.on("connection", function (err, socket, session){
 		leaveGame(session);
 	});
 
+
+
 	// Because for some reason socketSessions.getSession isn't working, I made this.
 	// When the user loses, they send this request to remove themself from the room via their session
 	socket.on("removeMeFromRoom", function() {
 		session.room = null;
 	});
 
+
+	// User is leaving a game
 	socket.on("leaveGame", function () {
-		// If the user is still connected to an active game in an active game.
+		// If the user is coming from a game OR if they lost in the game they were playing in
 		if(session.room !== openRoomID || session.room !== null) {
 			leaveGame(session);
 		}
 	});
 
+
+	// User wants to join a new game
 	socket.on("joinLobby", function () {
 		// If the user is not already in a lobby.
 		if(session.room !== openRoomID) {
@@ -477,17 +494,19 @@ sessionSockets.on("connection", function (err, socket, session){
 		// Check if 4 of a Kind in hand or if the number of spoons is not at maximum
 		} else if (fourOfKind(hand) || numberOfSpoons(roomid) !== usernames.length - 1){
 			// If valid, confirm taking the spoon by telling all users
-			var userid = usernames.indexOf(username);
-			io.emit("removeSpoon", index, userid);
+			for (var i = 0; i < usernames.length; i++){
+				userToSocket[usernames[i]].emit("removeSpoon", index, username);
+			}
+			// This spoon doesn't exist here anymore
 			rooms[roomid].spoons[index] = 0;
+			// This user now has spoon (yay)
 			users[username].hasSpoon = true;
-			// If spoons is 0, send message to end game
+			// If no more spoons, send message to end game
 			if (numberOfSpoons(roomid) === 0){
-				console.log("gameover from last spoon grabbed")
 				gameover(roomid);
 			}
 		} else {
-			// Otherwise, penalize the player
+			// Otherwise, penalize the player 5 seconds for grabbing another spoon
 			socket.emit("penalty");
 		}
 	});
