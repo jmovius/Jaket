@@ -52,8 +52,7 @@
 
 .spoons {
 	background: #8C8681;
-	/*background-image: url(../images/table.png);
-	background-repeat: repeat;*/
+    color: white;
 	text-align: center;
     border: solid #744400 1px;
     width: 72%;
@@ -62,6 +61,16 @@
     top: 21.4%;
     left: 14%;
     border-radius: 25px;
+}
+
+.playerWin {
+    color: green;
+    font-weight: bold;
+}
+
+.playerLose {
+    color: red;
+    font-weight: bold;
 }
 
 .hand {

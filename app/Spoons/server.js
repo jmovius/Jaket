@@ -377,6 +377,10 @@ var leaveGame = function (session) {
 
 // Server receives connection from a client
 sessionSockets.on("connection", function (err, socket, session){
+	if(typeof session === "undefined") {
+		socket.emit("goToLogin");
+		return;
+	}
 	//--[ Note ]--------------------------------------------
 	// Create data for session: session.<var> = <obj>
 	// Then save the data for the session: session.save()

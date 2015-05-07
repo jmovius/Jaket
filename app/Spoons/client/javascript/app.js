@@ -1,5 +1,5 @@
 // This will disable the penalty and inactivity timers
-var DISABLE_TIMERS = false;
+var DISABLE_TIMERS = true;
 
 var main = function () {
 	"use strict";
@@ -26,15 +26,24 @@ var main = function () {
 	var inactiveInterval;
 
 	// Adds a class to any user slot that is not occupied.
-	var setEmptyUsers = function (initPage) {
+	var setEmptyUsers = function (initPage, removeUser) {
 		var i;
 
 		// Set default value.
 		initPage = (typeof initPage !== "undefined") ? initPage : false;
 
+		if(typeof removeUser !== "undefined") {
+			for(i = 0; i < 8; i++) {
+				if($("div.u" + i).html() === removeUser) {
+					$("div.u" + i).empty();
+				}
+			}
+		}
+
+
 		for(i = 0; i < 8; i++) {
 			if(initPage) {
-				$("div.u" + i).empty()
+				$("div.u" + i).empty();
 			}
 			if( !$.trim( $("div.u" + i).html() ).length ) {
 				$("div.u" + i).addClass("emptyPlayer");
@@ -75,6 +84,11 @@ var main = function () {
 //=============================================================================
 // Socket.IO
 //=============================================================================
+
+	// If server was reboot, user must log in!
+	socket.on("goToLogin", function () {
+		$(location).attr("href","/");
+	});
 
 	// Get a list of all users in the same room and, depending on the scene, display
 	// the results to DOM elements
@@ -325,6 +339,9 @@ var main = function () {
 				// countdown timer until next round
 				gameTimer = 8;
 				startGameTimer();
+
+				// Remove losing player.
+				setEmptyUsers(false, uname);
 			}
 		}
 	});
