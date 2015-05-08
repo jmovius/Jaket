@@ -1,0 +1,175 @@
+E:\Desktop\Jaket - Copy\app\Spoons>node server
+Server listening on port 3000...
+Connected to Redis server
+Username: jj
+Password: de3bbd0fd7945e42581643b18cdf28dd3ed61d9c3d541b7b016081564b65a3f3
+{ password: 'de3bbd0fd7945e42581643b18cdf28dd3ed61d9c3d541b7b016081564b65a3f3',
+  rank: '0',
+  gamesPlayed: '0' }
+some client connected; username: jj
+user jj connected.
+Username: abeerguy
+Password: 6a62362c11e91c9f8205c47bbb30833a257c979f663b9a73d3c814ce228fe3dd
+Username: abeerguy
+Password: 6a62362c11e91c9f8205c47bbb30833a257c979f663b9a73d3c814ce228fe3dd
+{ password: '6a62362c11e91c9f8205c47bbb30833a257c979f663b9a73d3c814ce228fe3dd',
+  rank: '0',
+  gamesPlayed: '0' }
+some client connected; username: abeerguy
+user abeerguy connected.
+abeerguy disconnected with socket id: QbbiVmxBzLVHidJMAAAB
+jj disconnected with socket id: hvVypV7XpmoePw2BAAAA
+Username: kk20
+Password: 78deb09338a1ae29709b9ba2ffd013d0052b7e431bc10972d9bbe40e8f5bfb45
+Username: kk20
+Password: 1429d1c97f4f74111f7ac5cfe4a4ac42df001fbdd423897ee4f3dcef0d93bcdb
+Username: kk20
+Password: 1429d1c97f4f74111f7ac5cfe4a4ac42df001fbdd423897ee4f3dcef0d93bcdb
+{ password: '1429d1c97f4f74111f7ac5cfe4a4ac42df001fbdd423897ee4f3dcef0d93bcdb',
+  rank: '0',
+  gamesPlayed: '0' }
+some client connected; username: kk20
+user kk20 connected.
+Username: jj
+Password: de3bbd0fd7945e42581643b18cdf28dd3ed61d9c3d541b7b016081564b65a3f3
+{ password: 'de3bbd0fd7945e42581643b18cdf28dd3ed61d9c3d541b7b016081564b65a3f3',
+  rank: '0',
+  gamesPlayed: '0' }
+some client connected; username: jj
+user jj connected.
+jj disconnected with socket id: MvSrrVQi6XoBcmy-AAAD
+Username: bap
+Password: 5e62e18bf834819fdafbd4948cfc4087133b1d332be68de011f927ac873ab375
+Username: bap
+Password: 5e62e18bf834819fdafbd4948cfc4087133b1d332be68de011f927ac873ab375
+{ password: '5e62e18bf834819fdafbd4948cfc4087133b1d332be68de011f927ac873ab375',
+  rank: '0',
+  gamesPlayed: '0' }
+some client connected; username: bap
+user bap connected.
+Username: david wins
+Password: 584e7f19ea8bbb71156c84942893fa19ccad84866152eed77d4fdb10283db1f4
+Username: jmovius
+Password: ce8755e97918c89c064de94cd0aac36d2c42cb99e6a159bb09a17016830e0855
+Username: jmovius
+Password: ce8755e97918c89c064de94cd0aac36d2c42cb99e6a159bb09a17016830e0855
+{ password: 'ce8755e97918c89c064de94cd0aac36d2c42cb99e6a159bb09a17016830e0855',
+  rank: '0',
+  gamesPlayed: '0' }
+some client connected; username: jmovius
+user jmovius connected.
+Username: sirusblk
+Password: af2155cfde37c1b0ded5c00a1c496f971d41ec285a5750fdd350500e8f95aecb
+Username: sirusblk
+Password: af2155cfde37c1b0ded5c00a1c496f971d41ec285a5750fdd350500e8f95aecb
+{ password: 'af2155cfde37c1b0ded5c00a1c496f971d41ec285a5750fdd350500e8f95aecb',
+  rank: '0',
+  gamesPlayed: '0' }
+some client connected; username: sirusblk
+user sirusblk connected.
+Username: kk20
+Password: 1429d1c97f4f74111f7ac5cfe4a4ac42df001fbdd423897ee4f3dcef0d93bcdb
+kk20 disconnected with socket id: UB96uBtyrsbIFtYzAAAC
+Username: eduardo
+Password: 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+Username: kk20
+Password: 1429d1c97f4f74111f7ac5cfe4a4ac42df001fbdd423897ee4f3dcef0d93bcdb
+{ password: '1429d1c97f4f74111f7ac5cfe4a4ac42df001fbdd423897ee4f3dcef0d93bcdb',
+  rank: '0',
+  gamesPlayed: '0' }
+some client connected; username: kk20
+user kk20 connected.
+Username: eduardo
+Password: 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+{ password: '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08',
+  rank: '0',
+  gamesPlayed: '0' }
+some client connected; username: eduardo
+user eduardo connected.
+eduardo disconnected with socket id: iJU2BWm5s-1cZH02AAAI
+Username: eduardo
+Password: 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+{ password: '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08',
+  rank: '0',
+  gamesPlayed: '0' }
+some client connected; username: eduardo
+user eduardo connected.
+sirusblk disconnected with socket id: uy5ie8V8PTq5mZqkAAAG
+Username: sirusblk
+Password: af2155cfde37c1b0ded5c00a1c496f971d41ec285a5750fdd350500e8f95aecb
+{ password: 'af2155cfde37c1b0ded5c00a1c496f971d41ec285a5750fdd350500e8f95aecb',
+  rank: '0',
+  gamesPlayed: '0' }
+some client connected; username: sirusblk
+user sirusblk connected.
+eduardo disconnected with socket id: dVAJ3PlKJeme_RtXAAAJ
+Missing error handler on `socket`.
+TypeError: Cannot read property 'hand' of undefined
+    at Socket.<anonymous> (E:\Desktop\Jaket - Copy\app\Spoons\server.js:461:26)
+    at Socket.emit (events.js:107:17)
+    at Socket.onevent (E:\Desktop\Jaket - Copy\app\Spoons\node_modules\socket.io
+\lib\socket.js:330:8)
+    at Socket.onpacket (E:\Desktop\Jaket - Copy\app\Spoons\node_modules\socket.i
+o\lib\socket.js:290:12)
+    at Client.ondecoded (E:\Desktop\Jaket - Copy\app\Spoons\node_modules\socket.
+io\lib\client.js:193:14)
+    at Decoder.Emitter.emit (E:\Desktop\Jaket - Copy\app\Spoons\node_modules\soc
+ket.io\node_modules\socket.io-parser\node_modules\component-emitter\index.js:134
+:20)
+    at Decoder.add (E:\Desktop\Jaket - Copy\app\Spoons\node_modules\socket.io\no
+de_modules\socket.io-parser\index.js:247:12)
+    at Client.ondata (E:\Desktop\Jaket - Copy\app\Spoons\node_modules\socket.io\
+lib\client.js:175:18)
+    at Socket.emit (events.js:107:17)
+    at Socket.onPacket (E:\Desktop\Jaket - Copy\app\Spoons\node_modules\socket.i
+o\node_modules\engine.io\lib\socket.js:99:14)
+bap disconnected with socket id: jrdLkiETGNqoq6UBAAAE
+Username: bap
+Password: 5e62e18bf834819fdafbd4948cfc4087133b1d332be68de011f927ac873ab375
+{ password: '5e62e18bf834819fdafbd4948cfc4087133b1d332be68de011f927ac873ab375',
+  rank: '0',
+  gamesPlayed: '0' }
+some client connected; username: bap
+user bap connected.
+Missing error handler on `socket`.
+TypeError: Cannot read property 'users' of undefined
+    at leaveGame (E:\Desktop\Jaket - Copy\app\Spoons\server.js:362:15)
+    at Socket.<anonymous> (E:\Desktop\Jaket - Copy\app\Spoons\server.js:427:4)
+    at Socket.emit (events.js:104:17)
+    at Socket.onevent (E:\Desktop\Jaket - Copy\app\Spoons\node_modules\socket.io
+\lib\socket.js:330:8)
+    at Socket.onpacket (E:\Desktop\Jaket - Copy\app\Spoons\node_modules\socket.i
+o\lib\socket.js:290:12)
+    at Client.ondecoded (E:\Desktop\Jaket - Copy\app\Spoons\node_modules\socket.
+io\lib\client.js:193:14)
+    at Decoder.Emitter.emit (E:\Desktop\Jaket - Copy\app\Spoons\node_modules\soc
+ket.io\node_modules\socket.io-parser\node_modules\component-emitter\index.js:134
+:20)
+    at Decoder.add (E:\Desktop\Jaket - Copy\app\Spoons\node_modules\socket.io\no
+de_modules\socket.io-parser\index.js:247:12)
+    at Client.ondata (E:\Desktop\Jaket - Copy\app\Spoons\node_modules\socket.io\
+lib\client.js:175:18)
+    at Socket.emit (events.js:107:17)
+kk20 disconnected with socket id: KADX1OL9bZXrsZdUAAAH
+E:\Desktop\Jaket - Copy\app\Spoons\server.js:362
+                users = room.users,
+                            ^
+TypeError: Cannot read property 'users' of undefined
+    at leaveGame (E:\Desktop\Jaket - Copy\app\Spoons\server.js:362:15)
+    at Socket.<anonymous> (E:\Desktop\Jaket - Copy\app\Spoons\server.js:411:3)
+    at Socket.emit (events.js:107:17)
+    at Socket.emit (E:\Desktop\Jaket - Copy\app\Spoons\node_modules\socket.io\li
+b\socket.js:129:10)
+    at Socket.onclose (E:\Desktop\Jaket - Copy\app\Spoons\node_modules\socket.io
+\lib\socket.js:418:8)
+    at Client.onclose (E:\Desktop\Jaket - Copy\app\Spoons\node_modules\socket.io
+\lib\client.js:230:12)
+    at Client.onerror (E:\Desktop\Jaket - Copy\app\Spoons\node_modules\socket.io
+\lib\client.js:211:8)
+    at Client.ondata (E:\Desktop\Jaket - Copy\app\Spoons\node_modules\socket.io\
+lib\client.js:177:10)
+    at Socket.emit (events.js:107:17)
+    at Socket.onPacket (E:\Desktop\Jaket - Copy\app\Spoons\node_modules\socket.i
+o\node_modules\engine.io\lib\socket.js:99:14)
+
+E:\Desktop\Jaket - Copy\app\Spoons>
