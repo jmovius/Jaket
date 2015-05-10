@@ -317,7 +317,8 @@ var main = function () {
 			// Message indicating the player lost
 			$("div.spoons").append("YOU LOSE!");
 			// Ask server to remove them from the room via their session
-			socket.emit("removeMeFromRoom");
+//			socket.emit("removeMeFromRoom");
+			socket.emit("leaveGame");
 			// display button that will send user to open room
 			// TODO!
 		} else {

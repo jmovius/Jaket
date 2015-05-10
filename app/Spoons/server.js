@@ -194,6 +194,8 @@ function gameover(roomid){
 		users = room.users,
 		usernames = Object.keys(users),
 		user;
+	var gameComplete = (usernames.length === 2);
+
 	// If only one user in this room, win by default (caused when all other players disconnect)
 	if (usernames.length === 1){
 		userToSocket[usernames[0]].emit("gameresult", null, true);
@@ -207,17 +209,17 @@ function gameover(roomid){
 				break;
 			}
 		}
-		var gameComplete = (usernames.length === 2);
 		// Now tell the players the results
 		for (j; j < usernames.length; j++){
 			var uname = usernames[j];
 			userToSocket[uname].emit("gameresult", usernames[i], gameComplete);
 			// If this is the losing player, delete them from the room
-			if (j === i){
-				delete users[uname];
-				// You might notice I didn't put a session.room = null here. For some reason, getting the session was not working at all, so I just made it where
-				// the client will send a request to remove them from the room. This happens under "gameresult" client-side.
-			}
+
+			// You might notice I didn't put a session.room = null here. For some reason, getting the session was not working at all, so I just made it where
+			// the client will send a request to remove them from the room. This happens under "gameresult" client-side.
+//			if (j === i){
+//				delete users[uname]; // NOTE: gameresult will issue a disconnect to the server.
+//			}
 		}
 		// Set room timer to 8 seconds, indicating how long of a wait until next round (unless the game is over)
 		// Note that I don't need to send the "time" message as this is handled client-side in the "gameresult" message
@@ -343,7 +345,7 @@ var leaveActiveGame = function (session, roomid, room, users, usernames, user) {
 	removeSomeSpoon(roomid);
 	// If doing this causes the game to end, end the game
 	if (numberOfSpoons(roomid) === 0) {
-		gameover(roomid);
+		gameover(roomid, session);
 	}
 };
 // NOTE: isDisconnect defaults to false; however, if true, it means the user is currently in a lobby
@@ -378,6 +380,9 @@ var leaveGame = function (session) {
 // Server receives connection from a client
 sessionSockets.on("connection", function (err, socket, session){
 	if(typeof session === "undefined") {
+		socket.emit("goToLogin");
+		return;
+	} else if(typeof session.username === "undefined") {
 		socket.emit("goToLogin");
 		return;
 	}
@@ -415,15 +420,15 @@ sessionSockets.on("connection", function (err, socket, session){
 
 	// Because for some reason socketSessions.getSession isn't working, I made this.
 	// When the user loses, they send this request to remove themself from the room via their session
-	socket.on("removeMeFromRoom", function() {
-		session.room = null;
-	});
+//	socket.on("removeMeFromRoom", function() {
+//		session.room = null;
+//	});
 
 
 	// User is leaving a game
 	socket.on("leaveGame", function () {
-		// If the user is coming from a game OR if they lost in the game they were playing in
-		if(session.room !== openRoomID || session.room !== null) {
+		// If the user is not in a lobby and the user is not sitting in a losing game state.
+		if(session.room !== openRoomID && session.room !== null) {
 			leaveGame(session);
 		}
 	});
@@ -507,7 +512,7 @@ sessionSockets.on("connection", function (err, socket, session){
 			users[username].hasSpoon = true;
 			// If no more spoons, send message to end game
 			if (numberOfSpoons(roomid) === 0){
-				gameover(roomid);
+				gameover(roomid, session);
 			}
 		} else {
 			// Otherwise, penalize the player 5 seconds for grabbing another spoon
@@ -666,13 +671,13 @@ setInterval(function(){
 
 
 // Prints out server stats every 5 seconds. Can be removed in final version.
-setInterval(function(){
+/*setInterval(function(){
 	//console.log("Games in progress: " + inGameRooms.length);
 	console.log("Open Room ID: " + openRoomID);
 	console.log("Number of users in this room: " + Object.keys(rooms[openRoomID].users).length);
 	console.log("Wait time remaining: " + waitTime);
 }, 5000);
-
+*/
 
 //=============================================================================
 // Start-up the server
