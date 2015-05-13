@@ -54,6 +54,16 @@ header nav {
 	text-align: center;
 }
 
+div.userinfo{
+	position: absolute;
+	right: 10%;
+	width: 80%;
+	height: 30px;
+	top: 0%;
+	color: white;
+	text-align: right;
+}
+
 .headerlogo {
 	margin: -15px;
 	height: 65px;
