@@ -37,7 +37,7 @@ var main = function () {
 
 		if(typeof removeUser !== "undefined") {
 			for(i = 0; i < 7; i++) {
-				if($("div.u" + i).html() === removeUser) {
+				if($("div.u" + i).text() === removeUser) {
 					$("div.u" + i).empty();
 				}
 			}
@@ -48,7 +48,7 @@ var main = function () {
 			if(initPage) {
 				$("div.u" + i).empty();
 			}
-			if( !$.trim( $("div.u" + i).html() ).length ) {
+			if( !$.trim( $("div.u" + i).text() ).length ) {
 				$("div.u" + i).addClass("emptyPlayer");
 			} else {
 				$("div.u" + i).removeClass("emptyPlayer");
@@ -234,7 +234,7 @@ var main = function () {
 		var i;
 
 		for(i = 0; i < 7; i++) {
-			if( $("div.u" + i).html().substring(0, username.length) === username ) {
+			if( $("div.u" + i).text() === username ) {
 				$("div.u" + i).empty();
 				$("div.u" + i).addClass("emptyPlayer");
 			}
@@ -324,7 +324,7 @@ var main = function () {
 			stopInactiveTimer();
 		} else { // Draw spoon-got image next to user's box
 			for(var i = 0; i < 7; i++) {
-				if($("div.u" + i).html() === user) {
+				if($("div.u" + i).text() === user) {
 					var $spoon = $("<img>").addClass("gotSpoon").attr({
 						src: "images/gotSpoon.png",
 						id: "gotSpoon"
