@@ -57,6 +57,7 @@ var deckSchema = {
 };
 
 var initDeck = function (deck) {
+	"use strict";
 	var i, k,
 		retDeck = [],
 		lenSuits = deck.suits.length,
@@ -73,6 +74,8 @@ var initDeck = function (deck) {
 // Array shuffle function. Used to shuffle deck of cards.
 // Source: http://jsfromhell.com/array/shuffle
 var shuffle = function (o) {
+	"use strict";
+	
 	for(var j, x, i = o.length; i; j = Math.floor(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);
 	return o;
 };
@@ -85,11 +88,13 @@ var baseDeck = initDeck(deckSchema); // Deck Initialized
 
 // Creates a new array of length "size" filled with the integer 1. Used for making an instance of spoons in the room.
 function newOnesArray(size){
+	"use strict";
 	return new Array(size+1).join("1").split("").map(parseFloat);
 }
 
 // Removes the first spoon available in the room. Needed for when a user disconnects from the game.
 function removeSomeSpoon(roomid){
+	"use strict";
 	var room = rooms[roomid],
 		usernames = Object.keys(room.users),
 		spoons = room.spoons;
@@ -108,6 +113,7 @@ function removeSomeSpoon(roomid){
 
 // How many spoons are left on the table?
 function numberOfSpoons(roomid){
+	"use strict";
 	var room = rooms[roomid],
 		spoons = room.spoons,
 		count = 0;
@@ -122,6 +128,8 @@ function numberOfSpoons(roomid){
 
 // Return true if all 4 cards in the hand have the same value
 function fourOfKind(cards){
+	"use strict";
+
 	var card = cards[0],
 		value = card.value;
 	for (var i = 1; i < 4; i++){
@@ -136,6 +144,8 @@ function fourOfKind(cards){
 // After having set a timer on for the room, turn it off with this method called in a setTimeout
 // This is needed to start the game. Alert the users that the game has started too.
 function turnOffTimer(roomid){
+	"use strict";
+
 	var room = rooms[roomid],
 		users = room.users,
 		usernames = Object.keys(users);
@@ -149,6 +159,8 @@ function turnOffTimer(roomid){
 
 // Prepares the game by shuffling the deck and dealing out cards
 function prepGame(roomid){
+	"use strict";
+
 	var room = rooms[roomid],
 		users = room.users,
 		usernames = Object.keys(users);
@@ -181,6 +193,8 @@ function prepGame(roomid){
 
 // Close the waiting room and prepare for a new game
 function closeRoom(){
+	"use strict";
+
 	var room = rooms[openRoomID],
 		users = room.users,
 		usernames = Object.keys(users),
@@ -204,6 +218,8 @@ function closeRoom(){
 
 // The brief pause between each round. Preps for the next round
 function nextRound(roomid){
+	"use strict";
+
 	var room = rooms[roomid],
 		users = room.users,
 		usernames = Object.keys(users);
@@ -217,6 +233,8 @@ function nextRound(roomid){
 
 // Round has finished. Send results of the round to the users. The game is complete if two or fewer users remain by the time this is called.
 function gameover(roomid){
+	"use strict";
+
 	var room = rooms[roomid],
 		users = room.users,
 		usernames = Object.keys(users),
@@ -269,6 +287,8 @@ function gameover(roomid){
 
 // User is joining the waiting room
 var joinLobby = function (session) {
+	"use strict";
+
 	// Save user session by initalizing data
 	session.room = openRoomID;
 	session.save();
@@ -298,6 +318,8 @@ var joinLobby = function (session) {
 
 // Socket function to handle leaving a game lobby (waiting and active game). Reduces reusing code.
 var leaveLobby = function (session, roomid, room, users, usernames) {
+	"use strict";
+
 	// Delete the user from the room
 	delete rooms[roomid].users[session.username];
 	session.room = null;
@@ -312,6 +334,8 @@ var leaveLobby = function (session, roomid, room, users, usernames) {
 	});
 };
 var leaveActiveGame = function (session, roomid, room, users, usernames, user) {
+	"use strict";
+
 	// True if the current game has finished
 	var gameFinished = (numberOfSpoons(roomid) === 0 || usernames.length === 2);
 	// The last user of the room is leaving
@@ -365,6 +389,8 @@ var leaveActiveGame = function (session, roomid, room, users, usernames, user) {
 //		 is handled accordingly. If the user is not disconnecting (clicking the "Join Lobby" button),
 //		 then no action should be taken.
 var leaveGame = function (session, forced) {
+	"use strict";
+
 	// If not associated with a room (perhaps lost a game and is closing the window)
 	if (session.room === null){
 		// No need to do anything (completely harmless user)
@@ -398,6 +424,8 @@ var leaveGame = function (session, forced) {
 
 // Server receives connection from a client
 sessionSockets.on("connection", function (err, socket, session){
+	"use strict";
+
 	if(typeof session === "undefined") {
 		socket.emit("goToLogin");
 		return;
@@ -560,6 +588,7 @@ sessionSockets.on("connection", function (err, socket, session){
 // server establishes connection with Redis server
 rdb.on("connect", function(){
 	"use strict";
+
 	console.log("Connected to Redis server");
 });
 
@@ -579,6 +608,8 @@ app.get("/", function (req, res) {
 // otherwise, the user is directed to the login page.
 // Also, this user may not open another tab under themself so they will be redirected to the login page.
 app.get("/spoons", function (req, res) {
+	"use strict";
+
 	if(req.session.isAuthorized && !userToSocket[req.session.username]) {
 		res.sendFile(__dirname + "/client/default.html");
 	} else {
@@ -688,8 +719,11 @@ app.post("/login", function (req, res){
 // Wait Room timer. Decreases wait time each second and automatically starts the game if not
 // enough users are connected.
 setInterval(function(){
+	"use strict";
+
 	// If more than one user in the room
 	if (Object.keys(rooms[openRoomID].users).length > 1){
+
 		// Decrease the timer. If elapsed, forcibly start the game.
 		waitTime--;
 		if (waitTime === 0){

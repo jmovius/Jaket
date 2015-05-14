@@ -58,7 +58,7 @@ var main = function () {
     imageList.push("images/deck/cardback.png");
     imageList.push("images/spoon.png");
     // Preload images
-    var images = new Array();
+    var images = [];
     function preload(list) {
         for (i = 0; i < list.length; i++) {
             images[i] = new Image();
