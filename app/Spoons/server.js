@@ -36,7 +36,7 @@ app.use(express.static(__dirname + "/client")); // Apparently this line has to b
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Maximum number of players per room. Games can start with fewer players if 30 second timer goes up.
-var MAX_PLAYERS = 3;
+var MAX_PLAYERS = 8;
 
 
 var openRoomID = 0; // Current room index that is accepting players
